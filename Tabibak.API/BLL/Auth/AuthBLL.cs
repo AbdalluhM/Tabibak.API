@@ -138,7 +138,11 @@ namespace Tabibak.Api.BLL.Auth
                     return response.CreateResponse();
                 }
 
-                await AssignRoleToUser(inputDto.Role, user);
+                if (inputDto.Role != null)
+                {
+                    await AssignRoleToUser(inputDto.Role, user);
+                }
+
 
 
                 return response.CreateResponse(true);
@@ -170,7 +174,7 @@ namespace Tabibak.Api.BLL.Auth
             return response.CreateResponse(true);
         }
 
-        public async Task AssignRoleToUser(RoleEnum role, ApplicationUser user)
+        public async Task AssignRoleToUser(RoleEnum? role, ApplicationUser user)
         {
             switch (role)
             {
