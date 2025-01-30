@@ -1,6 +1,4 @@
 ﻿using AutoMapper;
-using Tabibak.Api.Dtos.AuthDtos;
-using Tabibak.Models;
 
 namespace Tabibak.Api.Mapper
 {
@@ -8,7 +6,7 @@ namespace Tabibak.Api.Mapper
     {
         public UserProfile()
         {
-            CreateMap<UserInputDto, ApplicationUser>().ReverseMap();
+            //CreateMap<UserInputDto, ApplicationUser>();
 
 
 

@@ -122,7 +122,14 @@ namespace Tabibak.Api.BLL.Auth
                 if (await _userManager.FindByNameAsync(inputDto.UserName) is not null)
                     return response.CreateResponse(MessageCodes.AlreadyExists, inputDto.UserName);
 
-                var user = _mapper.Map<ApplicationUser>(inputDto);
+                //   var user = _mapper.Map<ApplicationUser>(inputDto);
+
+                var user = new ApplicationUser
+                {
+                    UserName = inputDto.UserName,
+                    Email = inputDto.Email,
+                    PhoneNumber = inputDto.PhoneNumber,
+                };
 
                 var result = await _userManager.CreateAsync(user, inputDto.Password);
                 if (!result.Succeeded)

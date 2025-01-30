@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Tabibak.API.Migrations
 {
     /// <inheritdoc />
-    public partial class InintialCreate : Migration
+    public partial class initialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -64,6 +64,33 @@ namespace Tabibak.API.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_FileStorages", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "patients",
+                columns: table => new
+                {
+                    PatientId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Email = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_patients", x => x.PatientId);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Specialties",
+                columns: table => new
+                {
+                    SpecialtyId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Specialties", x => x.SpecialtyId);
                 });
 
             migrationBuilder.CreateTable(
@@ -195,6 +222,116 @@ namespace Tabibak.API.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "Doctors",
+                columns: table => new
+                {
+                    DoctorId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Qualification = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    ContactInfo = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    PatientId = table.Column<int>(type: "int", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Doctors", x => x.DoctorId);
+                    table.ForeignKey(
+                        name: "FK_Doctors_patients_PatientId",
+                        column: x => x.PatientId,
+                        principalTable: "patients",
+                        principalColumn: "PatientId");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Appointments",
+                columns: table => new
+                {
+                    AppointmentId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    AppointmentDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    DoctorId = table.Column<int>(type: "int", nullable: false),
+                    PatientId = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Appointments", x => x.AppointmentId);
+                    table.ForeignKey(
+                        name: "FK_Appointments_Doctors_DoctorId",
+                        column: x => x.DoctorId,
+                        principalTable: "Doctors",
+                        principalColumn: "DoctorId",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Appointments_patients_PatientId",
+                        column: x => x.PatientId,
+                        principalTable: "patients",
+                        principalColumn: "PatientId",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "DoctorSpecialty",
+                columns: table => new
+                {
+                    DoctorsDoctorId = table.Column<int>(type: "int", nullable: false),
+                    SpecialtiesSpecialtyId = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_DoctorSpecialty", x => new { x.DoctorsDoctorId, x.SpecialtiesSpecialtyId });
+                    table.ForeignKey(
+                        name: "FK_DoctorSpecialty_Doctors_DoctorsDoctorId",
+                        column: x => x.DoctorsDoctorId,
+                        principalTable: "Doctors",
+                        principalColumn: "DoctorId",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_DoctorSpecialty_Specialties_SpecialtiesSpecialtyId",
+                        column: x => x.SpecialtiesSpecialtyId,
+                        principalTable: "Specialties",
+                        principalColumn: "SpecialtyId",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Reviews",
+                columns: table => new
+                {
+                    ReviewId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Rating = table.Column<int>(type: "int", nullable: false),
+                    Comments = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    DoctorId = table.Column<int>(type: "int", nullable: false),
+                    PatientId = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Reviews", x => x.ReviewId);
+                    table.ForeignKey(
+                        name: "FK_Reviews_Doctors_DoctorId",
+                        column: x => x.DoctorId,
+                        principalTable: "Doctors",
+                        principalColumn: "DoctorId",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Reviews_patients_PatientId",
+                        column: x => x.PatientId,
+                        principalTable: "patients",
+                        principalColumn: "PatientId",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Appointments_DoctorId",
+                table: "Appointments",
+                column: "DoctorId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Appointments_PatientId",
+                table: "Appointments",
+                column: "PatientId");
+
             migrationBuilder.CreateIndex(
                 name: "IX_AspNetRoleClaims_RoleId",
                 table: "AspNetRoleClaims",
@@ -233,11 +370,34 @@ namespace Tabibak.API.Migrations
                 column: "NormalizedUserName",
                 unique: true,
                 filter: "[NormalizedUserName] IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Doctors_PatientId",
+                table: "Doctors",
+                column: "PatientId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_DoctorSpecialty_SpecialtiesSpecialtyId",
+                table: "DoctorSpecialty",
+                column: "SpecialtiesSpecialtyId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Reviews_DoctorId",
+                table: "Reviews",
+                column: "DoctorId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Reviews_PatientId",
+                table: "Reviews",
+                column: "PatientId");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "Appointments");
+
             migrationBuilder.DropTable(
                 name: "AspNetRoleClaims");
 
@@ -254,16 +414,31 @@ namespace Tabibak.API.Migrations
                 name: "AspNetUserTokens");
 
             migrationBuilder.DropTable(
+                name: "DoctorSpecialty");
+
+            migrationBuilder.DropTable(
                 name: "FileStorages");
 
             migrationBuilder.DropTable(
                 name: "RefreshToken");
 
             migrationBuilder.DropTable(
+                name: "Reviews");
+
+            migrationBuilder.DropTable(
                 name: "AspNetRoles");
 
             migrationBuilder.DropTable(
+                name: "Specialties");
+
+            migrationBuilder.DropTable(
                 name: "AspNetUsers");
+
+            migrationBuilder.DropTable(
+                name: "Doctors");
+
+            migrationBuilder.DropTable(
+                name: "patients");
         }
     }
 }

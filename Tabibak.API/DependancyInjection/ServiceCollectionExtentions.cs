@@ -1,4 +1,5 @@
 ﻿using Tabibak.Api.BLL;
+using Tabibak.Api.Mapper;
 
 namespace EcommerceApi.DependancyInjection
 {
@@ -17,9 +18,9 @@ namespace EcommerceApi.DependancyInjection
             #endregion
 
 
-
+            services.AddAutoMapper(typeof(UserProfile));
             // Add Auto Mapper
-            services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+            //services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
 
 
