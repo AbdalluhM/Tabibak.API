@@ -24,7 +24,7 @@ namespace Tabibak.Context
         public DbSet<Doctor> Doctors { get; set; }
         public DbSet<Specialty> Specialties { get; set; }
         public DbSet<Review> Reviews { get; set; }
-        public DbSet<Patient> patients { get; set; }
+        public DbSet<Patient> Patients { get; set; }
 
     }
 }
