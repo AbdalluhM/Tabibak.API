@@ -19,15 +19,26 @@ namespace Tabibak.API.BLL.Appointments
         // Create an appointment
         public async Task<IResponse<AppointmentResponseDto>> CreateAppointmentAsync(CreateAppointmentDto dto)
         {
+
             var response = new Response<AppointmentResponseDto>();
             var doctor = await _context.Doctors.FindAsync(dto.DoctorId);
             var patient = await _context.Patients.FindAsync(dto.PatientId);
 
             if (doctor == null || patient == null)
             {
-                throw new ArgumentException("Doctor or Patient not found.");
+                return response.CreateResponse(MessageCodes.NotFound, $"{nameof(doctor)}or{nameof(patient)}");
             }
 
+            // ✅ Check if doctor is available at the requested time
+            bool isDoctorBusy = await _context.Appointments
+                .AnyAsync(a => a.DoctorId == dto.DoctorId && a.AppointmentDate == dto.AppointmentDate);
+
+            if (isDoctorBusy)
+            {
+                return response.CreateResponse(MessageCodes.AlreadyExists, nameof(Appointment));
+            }
+
+            // ✅ Create a new appointment
             var appointment = new Appointment
             {
                 DoctorId = dto.DoctorId,

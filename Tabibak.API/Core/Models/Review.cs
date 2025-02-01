@@ -8,7 +8,7 @@ namespace Tabibak.API.Core.Models
         public int ReviewId { get; set; }
         public int Rating { get; set; }
         public string Comments { get; set; }
-
+        public DateTime CreatedAt { get; set; }
         // Foreign keys
         public int DoctorId { get; set; }
         public Doctor Doctor { get; set; }
