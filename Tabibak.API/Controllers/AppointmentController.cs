@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Tabibak.API.BLL.Appointments;
 using Tabibak.API.Dtos.Appoinments;
 
@@ -6,6 +7,7 @@ namespace Tabibak.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class AppointmentController : ControllerBase
     {
 

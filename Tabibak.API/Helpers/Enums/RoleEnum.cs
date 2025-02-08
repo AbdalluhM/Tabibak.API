@@ -2,8 +2,7 @@
 {
     public enum RoleEnum
     {
-        Admin = 1,
-        BusinessAdmin = 2,
-        Customer = 3,
+        Patient = 1,
+        Doctor = 2,
     }
 }

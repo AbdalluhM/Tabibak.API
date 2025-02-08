@@ -2,6 +2,7 @@
 using Tabibak.Api.BLL.BaseReponse;
 using Tabibak.Api.BLL.Constants;
 using Tabibak.API.Core.Models;
+using Tabibak.API.Dtos;
 using Tabibak.API.Dtos.Reviews;
 using Tabibak.Context;
 
@@ -80,13 +81,24 @@ namespace Tabibak.API.BLL.Reviews
         }
 
         // ✅ Get reviews by doctor
-        public async Task<IResponse<List<ReviewResponseDto>>> GetReviewsByDoctorAsync(int doctorId)
+        public async Task<PagedResult<ReviewResponsePagedDto>> GetDoctorReviewsAsync(int doctorId, int pageNumber, int pageSize)
         {
-            var response = new Response<List<ReviewResponseDto>>();
-            return response.CreateResponse(await _context.Reviews
+            var query = _context.Reviews
                 .Where(r => r.DoctorId == doctorId)
-                .Include(r => r.Patient)
-                .Select(r => new ReviewResponseDto
+                .Include(r => r.Doctor)
+                .OrderByDescending(r => r.CreatedAt);
+
+            int totalCount = await query.CountAsync();
+
+            // ✅ Calculate overall rating for the doctor
+            double overallRating = await _context.Reviews
+                // .Where(r => r.DoctorId == doctorId)
+                .AverageAsync(r => (double?)r.Rating) ?? 0.0;
+
+            var reviews = await query
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Select(r => new ReviewResponsePagedDto
                 {
                     ReviewId = r.ReviewId,
                     DoctorId = r.DoctorId,
@@ -95,19 +107,61 @@ namespace Tabibak.API.BLL.Reviews
                     PatientName = r.Patient.Name,
                     Rating = r.Rating,
                     Comments = r.Comments,
-                    CreatedAt = r.CreatedAt
+                    CreatedAt = r.CreatedAt,
+                    OverAllRating = overallRating  // ✅ Add overall rating to each response
                 })
-                .ToListAsync());
+                .ToListAsync();
+
+            return new PagedResult<ReviewResponsePagedDto>
+            {
+                Items = reviews,
+                TotalCount = totalCount,
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+            };
         }
 
+
+        //public async Task<IResponse<List<ReviewResponseDto>>> GetReviewsByDoctorAsync(int doctorId)
+        //{
+        //    var response = new Response<List<ReviewResponseDto>>();
+        //    return response.CreateResponse(await _context.Reviews
+        //        .Where(r => r.DoctorId == doctorId)
+        //        .Include(r => r.Patient)
+        //        .Select(r => new ReviewResponseDto
+        //        {
+        //            ReviewId = r.ReviewId,
+        //            DoctorId = r.DoctorId,
+        //            DoctorName = r.Doctor.Name,
+        //            PatientId = r.PatientId,
+        //            PatientName = r.Patient.Name,
+        //            Rating = r.Rating,
+        //            Comments = r.Comments,
+        //            CreatedAt = r.CreatedAt
+        //        })
+        //        .ToListAsync());
+        //}
+
         // ✅ Get reviews by patient
-        public async Task<IResponse<List<ReviewResponseDto>>> GetReviewsByPatientAsync(int patientId)
+        public async Task<PagedResult<ReviewResponsePagedDto>> GetPatientReviewsAsync(int patientId, int pageNumber, int pageSize)
         {
-            var response = new Response<List<ReviewResponseDto>>();
-            return response.CreateResponse(await _context.Reviews
-                .Where(r => r.PatientId == patientId)
-                .Include(r => r.Doctor)
-                .Select(r => new ReviewResponseDto
+            var query = _context.Reviews
+                .Where(r => r.DoctorId == patientId)
+                .Include(r => r.Patient)
+                .OrderByDescending(r => r.CreatedAt);
+
+            int totalCount = await query.CountAsync();
+
+
+            // ✅ Calculate overall rating for the doctor
+            double overallRating = await _context.Reviews
+                //.Where(r => r.PatientId == patientId)
+                .AverageAsync(r => (double?)r.Rating) ?? 0.0;
+
+            var reviews = await query
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Select(r => new ReviewResponsePagedDto
                 {
                     ReviewId = r.ReviewId,
                     DoctorId = r.DoctorId,
@@ -116,10 +170,38 @@ namespace Tabibak.API.BLL.Reviews
                     PatientName = r.Patient.Name,
                     Rating = r.Rating,
                     Comments = r.Comments,
-                    CreatedAt = r.CreatedAt
+                    CreatedAt = r.CreatedAt,
+                    OverAllRating = overallRating,
                 })
-                .ToListAsync());
+                .ToListAsync();
+
+            return new PagedResult<ReviewResponsePagedDto>
+            {
+                Items = reviews,
+                TotalCount = totalCount,
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            };
         }
+        //public async Task<IResponse<List<ReviewResponseDto>>> GetReviewsByPatientAsync(int patientId)
+        //{
+        //    var response = new Response<List<ReviewResponseDto>>();
+        //    return response.CreateResponse(await _context.Reviews
+        //        .Where(r => r.PatientId == patientId)
+        //        .Include(r => r.Doctor)
+        //        .Select(r => new ReviewResponseDto
+        //        {
+        //            ReviewId = r.ReviewId,
+        //            DoctorId = r.DoctorId,
+        //            DoctorName = r.Doctor.Name,
+        //            PatientId = r.PatientId,
+        //            PatientName = r.Patient.Name,
+        //            Rating = r.Rating,
+        //            Comments = r.Comments,
+        //            CreatedAt = r.CreatedAt
+        //        })
+        //        .ToListAsync());
+        //}
 
         // ✅ Update a review
         public async Task<IResponse<bool>> UpdateReviewAsync(int reviewId, UpdateReviewDto dto)

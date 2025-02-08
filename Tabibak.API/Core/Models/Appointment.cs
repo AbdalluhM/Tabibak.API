@@ -14,5 +14,6 @@ namespace Tabibak.API.Core.Models
 
         public int PatientId { get; set; }
         public Patient Patient { get; set; }
+        public string Status { get; set; } // "Pending", "Completed", "Cancelled"
     }
 }

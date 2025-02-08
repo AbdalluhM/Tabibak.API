@@ -1,9 +1,14 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Tabibak.Api.BLL.BaseReponse;
 using Tabibak.API.BLL.Reviews;
+using Tabibak.API.Core.Models;
+using Tabibak.API.Dtos;
 using Tabibak.API.Dtos.Reviews;
 
 [Route("api/[controller]")]
 [ApiController]
+[Authorize(Roles = nameof(Patient))]
 public class ReviewController : ControllerBase
 {
     private readonly IReviewBLL _reviewBLL;
@@ -15,6 +20,7 @@ public class ReviewController : ControllerBase
 
     // ✅ Create a new review
     [HttpPost]
+    [Produces<IResponse<ReviewResponseDto>>]
     public async Task<IActionResult> Create([FromBody] CreateReviewDto dto)
     {
 
@@ -25,6 +31,7 @@ public class ReviewController : ControllerBase
 
     // ✅ Get all reviews
     [HttpGet]
+    [Produces<IResponse<List<ReviewResponseDto>>>]
     public async Task<IActionResult> GetAll()
     {
         return Ok(await _reviewBLL.GetAllReviewsAsync());
@@ -32,20 +39,31 @@ public class ReviewController : ControllerBase
 
     // ✅ Get reviews by doctor
     [HttpGet("doctor/{doctorId}")]
-    public async Task<IActionResult> GetByDoctor(int doctorId)
+    [Produces<PagedResult<ReviewResponsePagedDto>>]
+    public async Task<IActionResult> GetDoctorReviews(int doctorId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
     {
-        return Ok(await _reviewBLL.GetReviewsByDoctorAsync(doctorId));
+        if (pageNumber < 1 || pageSize < 1)
+            return BadRequest("Page number and size must be greater than zero.");
+
+        var result = await _reviewBLL.GetDoctorReviewsAsync(doctorId, pageNumber, pageSize);
+        return Ok(result);
     }
 
     // ✅ Get reviews by patient
-    [HttpGet("patient/{patientId}")]
-    public async Task<IActionResult> GetByPatient(int patientId)
+    [HttpGet("patient/{doctorId}")]
+    [Produces<PagedResult<ReviewResponsePagedDto>>]
+    public async Task<IActionResult> GetPatientReviews(int patientId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
     {
-        return Ok(await _reviewBLL.GetReviewsByPatientAsync(patientId));
+        if (pageNumber < 1 || pageSize < 1)
+            return BadRequest("Page number and size must be greater than zero.");
+
+        var result = await _reviewBLL.GetPatientReviewsAsync(patientId, pageNumber, pageSize);
+        return Ok(result);
     }
 
     // ✅ Update a review
     [HttpPut("{id}")]
+    [Produces<IResponse<bool>>]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateReviewDto dto)
     {
         var success = await _reviewBLL.UpdateReviewAsync(id, dto);
@@ -56,6 +74,7 @@ public class ReviewController : ControllerBase
 
     // ✅ Delete a review
     [HttpDelete("{id}")]
+    [Produces<IResponse<bool>>]
     public async Task<IActionResult> Delete(int id)
     {
         var success = await _reviewBLL.DeleteReviewAsync(id);

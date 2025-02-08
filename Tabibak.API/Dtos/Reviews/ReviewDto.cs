@@ -28,5 +28,9 @@
         public string Comments { get; set; }
         public DateTime CreatedAt { get; set; }
     }
+    public class ReviewResponsePagedDto : ReviewResponseDto
+    {
+        public double OverAllRating { get; set; }
+    }
 
 }

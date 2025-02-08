@@ -12,6 +12,8 @@ using Tabibak.Api.BLL.Constants;
 using Tabibak.Api.Dtos.AuthDtos;
 using Tabibak.Api.Enums;
 using Tabibak.Api.Helpers.Settings;
+using Tabibak.API.Core.Models;
+using Tabibak.Context;
 using Tabibak.Models;
 
 namespace Tabibak.Api.BLL.Auth
@@ -19,13 +21,15 @@ namespace Tabibak.Api.BLL.Auth
     public class AuthBLL : BaseBLL, IAuthBLL
     {
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly ApplicationDbcontext _context;
         private readonly IMapper _mapper;
         private readonly JWT _jwt;
-        public AuthBLL(UserManager<ApplicationUser> userManager, IMapper mapper, IOptions<JWT> jwt)
+        public AuthBLL(UserManager<ApplicationUser> userManager, IMapper mapper, IOptions<JWT> jwt, ApplicationDbcontext context)
         {
             _userManager = userManager;
             _mapper = mapper;
             _jwt = jwt.Value;
+            _context = context;
         }
 
         public async Task<IResponse<LoginResultDto>> LoginAsync(LoginInputDto inputDto)
@@ -119,16 +123,23 @@ namespace Tabibak.Api.BLL.Auth
                 if (await _userManager.FindByEmailAsync(inputDto.Email) is not null)
                     return response.CreateResponse(MessageCodes.AlreadyExists, inputDto.Email);
 
-                if (await _userManager.FindByNameAsync(inputDto.UserName) is not null)
-                    return response.CreateResponse(MessageCodes.AlreadyExists, inputDto.UserName);
+                if (await _userManager.FindByNameAsync(inputDto.FullName) is not null)
+                    return response.CreateResponse(MessageCodes.AlreadyExists, inputDto.FullName);
 
                 //   var user = _mapper.Map<ApplicationUser>(inputDto);
 
                 var user = new ApplicationUser
                 {
-                    UserName = inputDto.UserName,
+                    FullName = inputDto.FullName,
+                    UserName = inputDto.FullName.Split(" ")[0],
                     Email = inputDto.Email,
                     PhoneNumber = inputDto.PhoneNumber,
+                    Role = inputDto.Role switch
+                    {
+                        RoleEnum.Patient => RoleEnum.Patient.ToString(),
+                        RoleEnum.Doctor => RoleEnum.Doctor.ToString(),
+                        _ => RoleEnum.Patient.ToString()
+                    }
                 };
 
                 var result = await _userManager.CreateAsync(user, inputDto.Password);
@@ -150,7 +161,20 @@ namespace Tabibak.Api.BLL.Auth
                     await AssignRoleToUser(inputDto.Role, user);
                 }
 
+                // ✅ Create Doctor or Patient record
+                if (inputDto.Role == RoleEnum.Doctor)
+                {
+                    _context.Add(_mapper.Map<Doctor>(user.Doctor));
+                }
+                else if (inputDto.Role == RoleEnum.Patient)
+                {
+                    _context.Add(new Patient
+                    {
+                        UserId = user.Id,
+                    });
+                }
 
+                await _context.SaveChangesAsync();
 
                 return response.CreateResponse(true);
             }
@@ -185,17 +209,17 @@ namespace Tabibak.Api.BLL.Auth
         {
             switch (role)
             {
-                case RoleEnum.BusinessAdmin:
-                    await _userManager.AddToRoleAsync(user, nameof(RoleEnum.BusinessAdmin));
+                case RoleEnum.Patient:
+                    await _userManager.AddToRoleAsync(user, nameof(RoleEnum.Patient));
                     break;
                 //case RoleEnum.Admin:
                 //    await _userManager.AddToRoleAsync(user, nameof(RoleEnum.Admin));
                 //    break;
-                case RoleEnum.Customer:
-                    await _userManager.AddToRoleAsync(user, nameof(RoleEnum.Customer));
+                case RoleEnum.Doctor:
+                    await _userManager.AddToRoleAsync(user, nameof(RoleEnum.Doctor));
                     break;
                 default:
-                    await _userManager.AddToRoleAsync(user, nameof(RoleEnum.Customer));
+                    await _userManager.AddToRoleAsync(user, nameof(RoleEnum.Patient));
                     break;
             }
         }

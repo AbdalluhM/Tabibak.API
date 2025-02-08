@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Tabibak.API.Core.Models;
 using Tabibak.Core.Models;
@@ -14,11 +15,66 @@ namespace Tabibak.Context
         }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            // ✅ Define relationships
+            modelBuilder.Entity<ApplicationUser>()
+                .HasOne(a => a.Doctor)
+                .WithOne(d => d.User)
+                .HasForeignKey<Doctor>(d => d.UserId)
+                .HasPrincipalKey<ApplicationUser>(u => u.Id)
+                .OnDelete(DeleteBehavior.Restrict);
 
+            modelBuilder.Entity<ApplicationUser>()
+                .HasOne(a => a.Patient)
+                .WithOne(p => p.User)
+                .HasForeignKey<Patient>(p => p.UserId)
+                .HasPrincipalKey<ApplicationUser>(u => u.Id)
+                .OnDelete(DeleteBehavior.Restrict);
 
+            // ✅ Explicitly define the length of UserId to match Identity column
+            modelBuilder.Entity<Doctor>()
+                .Property(d => d.UserId)
+                .HasColumnType("nvarchar(450)");
+
+            modelBuilder.Entity<Patient>()
+                .Property(p => p.UserId)
+                .HasColumnType("nvarchar(450)");
+            SeedRoles(modelBuilder);
+            SeedAdminUser(modelBuilder);
             base.OnModelCreating(modelBuilder);
         }
+        private void SeedRoles(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<IdentityRole>().HasData(
+                new IdentityRole { Id = "1", Name = "Patient", NormalizedName = "PATIENT" },
+                new IdentityRole { Id = "2", Name = "Customer", NormalizedName = "CUSTOMER" }
+            );
+        }
 
+        private void SeedAdminUser(ModelBuilder modelBuilder)
+        {
+            var adminUser = new ApplicationUser
+            {
+                Id = "1001",
+                UserName = "admin",
+                FullName = "admin",
+                Role = "admin",
+                NormalizedUserName = "ADMIN",
+                Email = "admin@example.com",
+                NormalizedEmail = "ADMIN@EXAMPLE.COM",
+                EmailConfirmed = true
+            };
+
+            // Hash the admin password
+            var passwordHasher = new PasswordHasher<ApplicationUser>();
+            adminUser.PasswordHash = passwordHasher.HashPassword(adminUser, "Admin@123");
+
+            modelBuilder.Entity<ApplicationUser>().HasData(adminUser);
+
+            // Assign the Admin role to the user
+            modelBuilder.Entity<IdentityUserRole<string>>().HasData(
+                new IdentityUserRole<string> { UserId = "1001", RoleId = "1" }
+            );
+        }
         public DbSet<FileStorage> FileStorages { get; set; }
         public DbSet<Appointment> Appointments { get; set; }
         public DbSet<Doctor> Doctors { get; set; }

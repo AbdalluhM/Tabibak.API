@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using Tabibak.Models;
 
 namespace Tabibak.API.Core.Models
 {
@@ -6,8 +7,12 @@ namespace Tabibak.API.Core.Models
     {
         [Key]
         public int PatientId { get; set; }
-        public string Name { get; set; }
-        public string Email { get; set; }
+        [MaxLength(100)]
+        public string Name => User.FullName;
+        [MaxLength(100)]
+        // ✅ Link to ApplicationUser (One-to-One)
+        public string UserId { get; set; }
+        public virtual ApplicationUser User { get; set; }
 
         // Navigation properties
         public ICollection<Appointment> Appointments { get; set; } = new List<Appointment>();
