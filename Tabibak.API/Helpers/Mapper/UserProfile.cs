@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Tabibak.Api.Dtos.AuthDtos;
 using Tabibak.API.Core.Models;
+using Tabibak.API.Dtos.Specialities;
 
 namespace Tabibak.Api.Mapper
 {
@@ -11,12 +12,14 @@ namespace Tabibak.Api.Mapper
             //CreateMap<UserInputDto, ApplicationUser>();
 
             CreateMap<DoctorInputDto, Doctor>()
-                .ForMember(d => d.Specialties, opt => opt.MapFrom(s => s.Specialties))
+                .ForMember(d => d.DoctorSpecialties, opt => opt.MapFrom(s => s.Specialties))
                 ;
 
-            CreateMap<SpecialtyInputDto, Specialty>();
+            CreateMap<SpecialtyInputDto, DoctorSpecialty>();
 
             CreateMap<PatientInputDto, Patient>();
+
+            CreateMap<Doctor, GetDoctoctorBySpecialtyDto>();
 
 
 

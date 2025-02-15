@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Tabibak.Context;
 
@@ -11,9 +12,11 @@ using Tabibak.Context;
 namespace Tabibak.API.Migrations
 {
     [DbContext(typeof(ApplicationDbcontext))]
-    partial class ApplicationDbcontextModelSnapshot : ModelSnapshot
+    [Migration("20250210221539_fixedMigration2")]
+    partial class fixedMigration2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -190,11 +193,12 @@ namespace Tabibak.API.Migrations
                     b.Property<int>("DoctorId")
                         .HasColumnType("int");
 
-                    b.Property<int?>("PatientId")
+                    b.Property<int>("PatientId")
                         .HasColumnType("int");
 
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("AppointmentId");
 
@@ -430,17 +434,17 @@ namespace Tabibak.API.Migrations
                         {
                             Id = "1001",
                             AccessFailedCount = 0,
-                            ConcurrencyStamp = "26395f0f-ac1c-4e8f-83d5-41ac792823a9",
+                            ConcurrencyStamp = "2411eeb1-3f8e-479e-93ca-31ff07775d3c",
                             Email = "admin@example.com",
                             EmailConfirmed = true,
                             FullName = "admin",
                             LockoutEnabled = false,
                             NormalizedEmail = "ADMIN@EXAMPLE.COM",
                             NormalizedUserName = "ADMIN",
-                            PasswordHash = "AQAAAAIAAYagAAAAECLkNb+Od7hl50ZlLVm4bdbJckBQPRmFoIWveiHACJwdO6L1lu80Ecymv4MFSs29Lw==",
+                            PasswordHash = "AQAAAAIAAYagAAAAEAMhb4AtTm5EoS92Q5uDMy5O26boJc+/KCuQMN1XjjNt9mJX5Up28Ry5Xwu6WGT0hA==",
                             PhoneNumberConfirmed = false,
                             Role = "admin",
-                            SecurityStamp = "5baf10b1-0fc3-443f-a8ae-4cb3b5e32e90",
+                            SecurityStamp = "40de3679-dacb-4f44-b45d-14f2929145e8",
                             TwoFactorEnabled = false,
                             UserName = "admin"
                         });
@@ -507,7 +511,9 @@ namespace Tabibak.API.Migrations
 
                     b.HasOne("Tabibak.API.Core.Models.Patient", "Patient")
                         .WithMany("Appointments")
-                        .HasForeignKey("PatientId");
+                        .HasForeignKey("PatientId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Doctor");
 

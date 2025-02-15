@@ -3,6 +3,7 @@ using Tabibak.Api.BLL.BaseReponse;
 using Tabibak.Api.BLL.Constants;
 using Tabibak.API.Core.Models;
 using Tabibak.API.Dtos.Appoinments;
+using Tabibak.API.Helpers.Enums;
 using Tabibak.Context;
 
 namespace Tabibak.API.BLL.Appointments
@@ -17,6 +18,73 @@ namespace Tabibak.API.BLL.Appointments
         }
 
         // Create an appointment
+        public async Task<IResponse<AppointmentResponseDto>> CreateAvailableAppointmentAsync(CreateAppointmentDto dto)
+        {
+            var response = new Response<AppointmentResponseDto>();
+
+            var doctor = await _context.Doctors.Include(d => d.User).FirstOrDefaultAsync(d => d.DoctorId == dto.DoctorId);
+            if (doctor == null)
+            {
+                return response.CreateResponse(MessageCodes.NotFound, nameof(doctor));
+            }
+
+            // ✅ Ensure no duplicate slots
+            bool slotExists = await _context.Appointments
+                .AnyAsync(a => a.DoctorId == dto.DoctorId && a.AppointmentDate == dto.AppointmentDate);
+
+            if (slotExists)
+            {
+                return response.CreateResponse(MessageCodes.AlreadyExists, nameof(AppointMent));
+            }
+
+            var appointment = new Appointment
+            {
+                DoctorId = dto.DoctorId,
+                AppointmentDate = dto.AppointmentDate,
+                Status = AppointmentStatus.Available,
+            };
+
+            _context.Appointments.Add(appointment);
+            await _context.SaveChangesAsync();
+
+            return response.CreateResponse(new AppointmentResponseDto
+            {
+                AppointmentId = appointment.AppointmentId,
+                DoctorId = doctor.DoctorId,
+                DoctorName = doctor.Name,
+                AppointmentDate = appointment.AppointmentDate,
+                Status = appointment.Status
+            });
+        }
+        public async Task<IResponse<int>> BookAppointmentAsync(int appointmentId, int patientId)
+        {
+            var response = new Response<int>();
+
+            var appointment = await _context.Appointments
+                .Include(a => a.Doctor)
+                .ThenInclude(d => d.User)
+                .FirstOrDefaultAsync(a => a.AppointmentId == appointmentId && a.Status == AppointmentStatus.Available);
+
+            if (appointment == null)
+            {
+                return response.CreateResponse(MessageCodes.NotFound, nameof(appointment));
+            }
+
+            var patient = await _context.Patients.FindAsync(patientId);
+            if (patient == null)
+            {
+                return response.CreateResponse(MessageCodes.NotFound, nameof(patient));
+            }
+
+            // ✅ Book the appointment
+            appointment.PatientId = patientId;
+            appointment.Status = AppointmentStatus.Booked;
+
+            await _context.SaveChangesAsync();
+
+            return response.CreateResponse(appointmentId);
+        }
+
         public async Task<IResponse<AppointmentResponseDto>> CreateAppointmentAsync(CreateAppointmentDto dto)
         {
 
@@ -55,12 +123,33 @@ namespace Tabibak.API.BLL.Appointments
                 DoctorId = appointment.DoctorId,
                 DoctorName = doctor.Name,
                 PatientId = appointment.PatientId,
-                PatientName = patient.Name,
+                PatientName = patient.User.FullName,
                 AppointmentDate = appointment.AppointmentDate
             });
         }
 
         // Get all appointments
+        public async Task<IResponse<List<AppointmentResponseDto>>> GetAvailableAppointmentsAsync(int doctorId)
+        {
+            var response = new Response<List<AppointmentResponseDto>>();
+
+            var appointments = await _context.Appointments
+                .Include(a => a.Doctor)
+                .ThenInclude(d => d.User)
+                .Where(a => a.DoctorId == doctorId && a.Status == AppointmentStatus.Available)
+                .Select(a => new AppointmentResponseDto
+                {
+                    AppointmentId = a.AppointmentId,
+                    DoctorId = a.DoctorId,
+                    DoctorName = a.Doctor.Name,
+                    AppointmentDate = a.AppointmentDate,
+                    Status = a.Status
+                })
+                .ToListAsync();
+
+            return response.CreateResponse(appointments);
+        }
+
         public async Task<IResponse<List<AppointmentResponseDto>>> GetAllAppointmentsAsync()
         {
             var response = new Response<List<AppointmentResponseDto>>();
@@ -73,7 +162,7 @@ namespace Tabibak.API.BLL.Appointments
                     DoctorId = a.DoctorId,
                     DoctorName = a.Doctor.Name,
                     PatientId = a.PatientId,
-                    PatientName = a.Patient.Name,
+                    PatientName = a.Patient.User.FullName,
                     AppointmentDate = a.AppointmentDate
                 })
                 .ToListAsync());
@@ -98,7 +187,7 @@ namespace Tabibak.API.BLL.Appointments
                 DoctorId = appointment.DoctorId,
                 DoctorName = appointment.Doctor.Name,
                 PatientId = appointment.PatientId,
-                PatientName = appointment.Patient.Name,
+                PatientName = appointment.Patient.User.FullName,
                 AppointmentDate = appointment.AppointmentDate
             });
         }
@@ -140,9 +229,9 @@ namespace Tabibak.API.BLL.Appointments
                 {
                     AppointmentId = a.AppointmentId,
                     DoctorId = a.DoctorId,
-                    DoctorName = a.Doctor.Name,
+                    DoctorName = a.Doctor.User.FullName,
                     PatientId = a.PatientId,
-                    PatientName = a.Patient.Name,
+                    PatientName = a.Patient.User.FullName,
                     AppointmentDate = a.AppointmentDate
                 })
                 .ToListAsync());
@@ -161,7 +250,7 @@ namespace Tabibak.API.BLL.Appointments
                     DoctorId = a.DoctorId,
                     DoctorName = a.Doctor.Name,
                     PatientId = a.PatientId,
-                    PatientName = a.Patient.Name,
+                    PatientName = a.Patient.User.FullName,
                     AppointmentDate = a.AppointmentDate
                 })
                 .ToListAsync());

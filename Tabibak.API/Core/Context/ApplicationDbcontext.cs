@@ -15,6 +15,22 @@ namespace Tabibak.Context
         }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+
+            // ✅ Configure Many-to-Many Relationship
+            modelBuilder.Entity<DoctorSpecialty>()
+                .HasKey(ds => new { ds.DoctorId, ds.SpecialtyId });
+
+            modelBuilder.Entity<DoctorSpecialty>()
+                .HasOne(ds => ds.Doctor)
+                .WithMany(d => d.DoctorSpecialties)
+                .HasForeignKey(ds => ds.DoctorId);
+
+            modelBuilder.Entity<DoctorSpecialty>()
+                .HasOne(ds => ds.Specialty)
+                .WithMany(s => s.DoctorSpecialties)
+                .HasForeignKey(ds => ds.SpecialtyId);
+
+
             // ✅ Define relationships
             modelBuilder.Entity<ApplicationUser>()
                 .HasOne(a => a.Doctor)

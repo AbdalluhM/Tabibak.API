@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using Tabibak.API.Helpers.Enums;
 
 namespace Tabibak.API.Core.Models
 {
@@ -7,13 +8,14 @@ namespace Tabibak.API.Core.Models
         [Key]
         public int AppointmentId { get; set; }
         public DateTime AppointmentDate { get; set; }
-
-        // Foreign keys
         public int DoctorId { get; set; }
         public Doctor Doctor { get; set; }
 
-        public int PatientId { get; set; }
-        public Patient Patient { get; set; }
-        public string Status { get; set; } // "Pending", "Completed", "Cancelled"
+        public int? PatientId { get; set; }
+        public Patient? Patient { get; set; }
+
+        public AppointmentStatus Status { get; set; } = AppointmentStatus.Available;
     }
+
+
 }

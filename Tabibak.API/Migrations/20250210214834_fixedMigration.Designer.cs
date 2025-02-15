@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Tabibak.Context;
 
@@ -11,9 +12,11 @@ using Tabibak.Context;
 namespace Tabibak.API.Migrations
 {
     [DbContext(typeof(ApplicationDbcontext))]
-    partial class ApplicationDbcontextModelSnapshot : ModelSnapshot
+    [Migration("20250210214834_fixedMigration")]
+    partial class fixedMigration
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -190,11 +193,12 @@ namespace Tabibak.API.Migrations
                     b.Property<int>("DoctorId")
                         .HasColumnType("int");
 
-                    b.Property<int?>("PatientId")
+                    b.Property<int>("PatientId")
                         .HasColumnType("int");
 
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("AppointmentId");
 
@@ -217,6 +221,9 @@ namespace Tabibak.API.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int?>("PatientId")
+                        .HasColumnType("int");
+
                     b.Property<string>("Qualification")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -226,6 +233,8 @@ namespace Tabibak.API.Migrations
                         .HasColumnType("nvarchar(450)");
 
                     b.HasKey("DoctorId");
+
+                    b.HasIndex("PatientId");
 
                     b.HasIndex("UserId")
                         .IsUnique();
@@ -258,6 +267,7 @@ namespace Tabibak.API.Migrations
 
                     b.Property<string>("UserId")
                         .IsRequired()
+                        .HasMaxLength(100)
                         .HasColumnType("nvarchar(450)");
 
                     b.HasKey("PatientId");
@@ -430,17 +440,17 @@ namespace Tabibak.API.Migrations
                         {
                             Id = "1001",
                             AccessFailedCount = 0,
-                            ConcurrencyStamp = "26395f0f-ac1c-4e8f-83d5-41ac792823a9",
+                            ConcurrencyStamp = "c6397f42-4db1-40b4-88d0-ea97ef5c7dd1",
                             Email = "admin@example.com",
                             EmailConfirmed = true,
                             FullName = "admin",
                             LockoutEnabled = false,
                             NormalizedEmail = "ADMIN@EXAMPLE.COM",
                             NormalizedUserName = "ADMIN",
-                            PasswordHash = "AQAAAAIAAYagAAAAECLkNb+Od7hl50ZlLVm4bdbJckBQPRmFoIWveiHACJwdO6L1lu80Ecymv4MFSs29Lw==",
+                            PasswordHash = "AQAAAAIAAYagAAAAEErYcsJvgSWmoL/Ippoj3LlH/wfrNbQuqQfi9K8YaEnO0SYlsMpwGmSHb0ouMErEoA==",
                             PhoneNumberConfirmed = false,
                             Role = "admin",
-                            SecurityStamp = "5baf10b1-0fc3-443f-a8ae-4cb3b5e32e90",
+                            SecurityStamp = "bad5925c-4db9-43d1-a081-b7a200b12082",
                             TwoFactorEnabled = false,
                             UserName = "admin"
                         });
@@ -507,7 +517,9 @@ namespace Tabibak.API.Migrations
 
                     b.HasOne("Tabibak.API.Core.Models.Patient", "Patient")
                         .WithMany("Appointments")
-                        .HasForeignKey("PatientId");
+                        .HasForeignKey("PatientId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Doctor");
 
@@ -516,6 +528,10 @@ namespace Tabibak.API.Migrations
 
             modelBuilder.Entity("Tabibak.API.Core.Models.Doctor", b =>
                 {
+                    b.HasOne("Tabibak.API.Core.Models.Patient", null)
+                        .WithMany("Wishlist")
+                        .HasForeignKey("PatientId");
+
                     b.HasOne("Tabibak.Models.ApplicationUser", "User")
                         .WithOne("Doctor")
                         .HasForeignKey("Tabibak.API.Core.Models.Doctor", "UserId")
@@ -625,6 +641,8 @@ namespace Tabibak.API.Migrations
                     b.Navigation("Appointments");
 
                     b.Navigation("Reviews");
+
+                    b.Navigation("Wishlist");
                 });
 
             modelBuilder.Entity("Tabibak.API.Core.Models.Specialty", b =>

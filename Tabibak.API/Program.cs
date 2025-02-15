@@ -135,6 +135,7 @@ app.UseSwagger();
 app.UseSwaggerUI();
 app.UseCors(policyName: "CorsPolicy");
 //}
+app.UseHttpsRedirection();
 
 app.UseHttpsRedirection();
 

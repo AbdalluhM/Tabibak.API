@@ -51,7 +51,19 @@ namespace Tabibak.Api.BLL.Auth
                 if (user == null || !await _userManager.CheckPasswordAsync(user, inputDto.Password))
                     return response.CreateResponse(MessageCodes.InvalidLoginCredentials);
 
-                var token = await CreateJwtToken(user);
+                int patienOrDoctorId = 0;
+                if (user.Role == nameof(RoleEnum.Doctor))
+                {
+                    var doctor = await _context.Doctors.FirstOrDefaultAsync(u => u.UserId == user.Id);
+                    patienOrDoctorId = doctor?.DoctorId ?? 0;
+                }
+                else
+                {
+                    var patient = await _context.Patients.FirstOrDefaultAsync(u => u.UserId == user.Id);
+                    patienOrDoctorId = patient?.PatientId ?? 0;
+                }
+
+                var token = await CreateJwtToken(user, patienOrDoctorId);
                 string refreshToken = string.Empty;
                 DateTime refreshDateExpiration = default;
 
@@ -101,7 +113,18 @@ namespace Tabibak.Api.BLL.Auth
             refreshToken.RevokedOn = DateTime.UtcNow;
 
             var newRefreshToken = CreateRefreshToken();
-            var jwtToken = await CreateJwtToken(user);
+            int patienOrDoctorId = 0;
+            if (user.Role == nameof(RoleEnum.Doctor))
+            {
+                var doctor = await _context.Doctors.FindAsync(user.Id);
+                patienOrDoctorId = doctor?.DoctorId ?? 0;
+            }
+            else
+            {
+                var patient = await _context.Patients.FindAsync(user.Id);
+                patienOrDoctorId = patient?.PatientId ?? 0;
+            }
+            var jwtToken = await CreateJwtToken(user, patienOrDoctorId);
 
             user.RefreshTokens.Add(newRefreshToken);
             await _userManager.UpdateAsync(user);
@@ -164,8 +187,12 @@ namespace Tabibak.Api.BLL.Auth
                 // ✅ Create Doctor or Patient record
                 if (inputDto.Role == RoleEnum.Doctor)
                 {
-                    _context.Add(_mapper.Map<Doctor>(user.Doctor));
+                    var mappedDoctor = _mapper.Map<Doctor>(inputDto.Doctor);
+                    mappedDoctor.UserId = user.Id;
+
+                    _context.Add(mappedDoctor);
                 }
+
                 else if (inputDto.Role == RoleEnum.Patient)
                 {
                     _context.Add(new Patient
@@ -226,11 +253,12 @@ namespace Tabibak.Api.BLL.Auth
 
 
         #region CreatTokenJwt And RefreshToken
-        private async Task<JwtSecurityToken> CreateJwtToken(ApplicationUser user)
+        private async Task<JwtSecurityToken> CreateJwtToken(ApplicationUser user, int pateientOrDoctorId)
         {
             var userClaims = await _userManager.GetClaimsAsync(user);
             var roles = await _userManager.GetRolesAsync(user);
             var roleClaims = new List<Claim>();
+            string userId = pateientOrDoctorId.ToString();
 
             foreach (var role in roles)
                 roleClaims.Add(new Claim("roles", role));
@@ -240,6 +268,7 @@ namespace Tabibak.Api.BLL.Auth
                 new Claim(JwtRegisteredClaimNames.Sub, user.UserName),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                 new Claim(JwtRegisteredClaimNames.Email, user.Email),
+                new Claim(nameof(userId), userId),
                 new Claim("uid", user.Id)
             }
             .Union(userClaims)

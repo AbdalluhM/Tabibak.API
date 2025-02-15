@@ -6,6 +6,9 @@ namespace Tabibak.API.BLL.Appointments
     public interface IAppointmentBLL
     {
         Task<IResponse<AppointmentResponseDto>> CreateAppointmentAsync(CreateAppointmentDto dto);
+        Task<IResponse<AppointmentResponseDto>> CreateAvailableAppointmentAsync(CreateAppointmentDto dto);
+        Task<IResponse<int>> BookAppointmentAsync(int appointmentId, int patientId);
+        Task<IResponse<List<AppointmentResponseDto>>> GetAvailableAppointmentsAsync(int doctorId);
         Task<IResponse<List<AppointmentResponseDto>>> GetAllAppointmentsAsync();
         Task<IResponse<AppointmentResponseDto>> GetAppointmentByIdAsync(int id);
         Task<IResponse<bool>> UpdateAppointmentAsync(int id, UpdateAppointmentDto dto);

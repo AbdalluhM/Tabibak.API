@@ -11,7 +11,8 @@ namespace Tabibak.API.Core.Models
         [MaxLength(100)]
         public string EnName { get; set; }
 
-        // Navigation properties
-        public ICollection<Doctor> Doctors { get; set; } = new List<Doctor>();
+        // ✅ Many-to-Many Relationship with Doctors
+        public ICollection<DoctorSpecialty> DoctorSpecialties { get; set; } = new List<DoctorSpecialty>();
     }
+
 }

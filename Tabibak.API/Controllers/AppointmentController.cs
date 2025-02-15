@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Tabibak.Api.Enums;
 using Tabibak.API.BLL.Appointments;
 using Tabibak.API.Dtos.Appoinments;
 
@@ -8,7 +9,7 @@ namespace Tabibak.API.Controllers
     [Route("api/[controller]")]
     [ApiController]
     [Authorize]
-    public class AppointmentController : ControllerBase
+    public class AppointmentController : BaseController
     {
 
         private readonly IAppointmentBLL _appointmentBLL;
@@ -26,7 +27,32 @@ namespace Tabibak.API.Controllers
             return CreatedAtAction(nameof(GetById), new { id = appointment.Data.AppointmentId }, appointment);
         }
 
+        [HttpPost("create")]
+        [Authorize(Roles = nameof(RoleEnum.Doctor))]
+        public async Task<IActionResult> CreateAvailableAppointment([FromForm] DateTime AppointmentDate)
+        {
+
+            var appointment = await _appointmentBLL.CreateAvailableAppointmentAsync(new CreateAppointmentDto
+            {
+                AppointmentDate = AppointmentDate,
+                DoctorId = UserId,
+            });
+            return CreatedAtAction(nameof(GetById), new { id = appointment.Data.AppointmentId }, appointment);
+        }
+        [HttpPost("book")]
+        [Authorize(Roles = nameof(RoleEnum.Patient))]
+        public async Task<IActionResult> Book(int appointmentId)
+        {
+
+            var appointment = await _appointmentBLL.BookAppointmentAsync(appointmentId, UserId);
+            return Ok(appointment);
+        }
         // Get all appointments
+        [HttpGet("available")]
+        public async Task<IActionResult> GetAvailable(int doctorId)
+        {
+            return Ok(await _appointmentBLL.GetAvailableAppointmentsAsync(doctorId));
+        }
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {

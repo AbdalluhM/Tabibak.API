@@ -13,10 +13,14 @@ namespace Tabibak.API.Core.Models
 
         // ✅ Link to ApplicationUser (One-to-One)
         public string UserId { get; set; }
-        // Navigation properties
         public virtual ApplicationUser User { get; set; }
-        public ICollection<Specialty> Specialties { get; set; } = new List<Specialty>();
+
+        // ✅ Many-to-Many Relationship with Specialties (Fixed)
+        public ICollection<DoctorSpecialty> DoctorSpecialties { get; set; } = new List<DoctorSpecialty>();
+
         public ICollection<Appointment> Appointments { get; set; } = new List<Appointment>();
         public ICollection<Review> Reviews { get; set; } = new List<Review>();
     }
+
+
 }
