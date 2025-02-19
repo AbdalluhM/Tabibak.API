@@ -29,11 +29,11 @@ namespace Tabibak.API.BLL.Reviews
                 return response.CreateResponse(MessageCodes.NotFound, $"{nameof(doctor)}or{nameof(patient)}");
 
             // ✅ Check if patient had an appointment with the doctor
-            bool hasAppointment = await _context.Appointments
-                .AnyAsync(a => a.DoctorId == dto.DoctorId && a.PatientId == dto.PatientId);
+            //bool hasAppointment = await _context.Appointments
+            //    .AnyAsync(a => a.DoctorId == dto.DoctorId && a.PatientId == dto.PatientId);
 
-            if (!hasAppointment)
-                throw new InvalidOperationException("You can only review doctors after an appointment.");
+            //if (!hasAppointment)
+            //    throw new InvalidOperationException("You can only review doctors after an appointment.");
 
             var review = new Review
             {

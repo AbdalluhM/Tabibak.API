@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Tabibak.Api.BLL.BaseReponse;
 using Tabibak.API.BLL.Reviews;
+using Tabibak.API.Controllers;
 using Tabibak.API.Core.Models;
 using Tabibak.API.Dtos;
 using Tabibak.API.Dtos.Reviews;
@@ -9,7 +10,7 @@ using Tabibak.API.Dtos.Reviews;
 [Route("api/[controller]")]
 [ApiController]
 [Authorize(Roles = nameof(Patient))]
-public class ReviewController : ControllerBase
+public class ReviewController : BaseController
 {
     private readonly IReviewBLL _reviewBLL;
 
@@ -23,6 +24,7 @@ public class ReviewController : ControllerBase
     [Produces<IResponse<ReviewResponseDto>>]
     public async Task<IActionResult> Create([FromBody] CreateReviewDto dto)
     {
+        dto.PatientId = UserId;
 
         var review = await _reviewBLL.CreateReviewAsync(dto);
         return Ok(review);

@@ -1,4 +1,6 @@
-﻿namespace Tabibak.API.Dtos.Reviews
+﻿using System.Text.Json.Serialization;
+
+namespace Tabibak.API.Dtos.Reviews
 {
     public class ReviewDto
     {
@@ -6,6 +8,7 @@
     public class CreateReviewDto
     {
         public int DoctorId { get; set; }
+        [JsonIgnore]
         public int PatientId { get; set; }
         public int Rating { get; set; }  // 1 to 5 stars
         public string Comments { get; set; }
