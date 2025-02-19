@@ -52,7 +52,7 @@ public class ReviewController : BaseController
     }
 
     // ✅ Get reviews by patient
-    [HttpGet("patient/{doctorId}")]
+    [HttpGet("patient/{patientId}")]
     [Produces<PagedResult<ReviewResponsePagedDto>>]
     public async Task<IActionResult> GetPatientReviews(int patientId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
     {

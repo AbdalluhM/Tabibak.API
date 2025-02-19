@@ -22,8 +22,8 @@ namespace Tabibak.API.BLL.Reviews
         {
             var response = new Response<ReviewResponseDto>();
 
-            var doctor = await _context.Doctors.FindAsync(dto.DoctorId);
-            var patient = await _context.Patients.FindAsync(dto.PatientId);
+            var doctor = await _context.Doctors.Include(d => d.User).FirstOrDefaultAsync(d => d.DoctorId == dto.DoctorId);
+            var patient = await _context.Patients.Include(d => d.User).FirstOrDefaultAsync(d => d.PatientId == dto.PatientId);
 
             if (doctor == null || patient == null)
                 return response.CreateResponse(MessageCodes.NotFound, $"{nameof(doctor)}or{nameof(patient)}");
@@ -65,7 +65,9 @@ namespace Tabibak.API.BLL.Reviews
             var response = new Response<List<ReviewResponseDto>>();
             return response.CreateResponse(await _context.Reviews
                 .Include(r => r.Doctor)
+                .ThenInclude(d => d.User)
                 .Include(r => r.Patient)
+                .ThenInclude(p => p.User)
                 .Select(r => new ReviewResponseDto
                 {
                     ReviewId = r.ReviewId,
@@ -86,6 +88,9 @@ namespace Tabibak.API.BLL.Reviews
             var query = _context.Reviews
                 .Where(r => r.DoctorId == doctorId)
                 .Include(r => r.Doctor)
+                .ThenInclude(d => d.User)
+                .Include(r => r.Patient)
+                .ThenInclude(p => p.User)
                 .OrderByDescending(r => r.CreatedAt);
 
             int totalCount = await query.CountAsync();
@@ -122,32 +127,14 @@ namespace Tabibak.API.BLL.Reviews
         }
 
 
-        //public async Task<IResponse<List<ReviewResponseDto>>> GetReviewsByDoctorAsync(int doctorId)
-        //{
-        //    var response = new Response<List<ReviewResponseDto>>();
-        //    return response.CreateResponse(await _context.Reviews
-        //        .Where(r => r.DoctorId == doctorId)
-        //        .Include(r => r.Patient)
-        //        .Select(r => new ReviewResponseDto
-        //        {
-        //            ReviewId = r.ReviewId,
-        //            DoctorId = r.DoctorId,
-        //            DoctorName = r.Doctor.Name,
-        //            PatientId = r.PatientId,
-        //            PatientName = r.Patient.Name,
-        //            Rating = r.Rating,
-        //            Comments = r.Comments,
-        //            CreatedAt = r.CreatedAt
-        //        })
-        //        .ToListAsync());
-        //}
-
-        // ✅ Get reviews by patient
         public async Task<PagedResult<ReviewResponsePagedDto>> GetPatientReviewsAsync(int patientId, int pageNumber, int pageSize)
         {
             var query = _context.Reviews
-                .Where(r => r.DoctorId == patientId)
+                .Where(r => r.PatientId == patientId)
+                 .Include(r => r.Doctor)
+                .ThenInclude(d => d.User)
                 .Include(r => r.Patient)
+                .ThenInclude(p => p.User)
                 .OrderByDescending(r => r.CreatedAt);
 
             int totalCount = await query.CountAsync();
