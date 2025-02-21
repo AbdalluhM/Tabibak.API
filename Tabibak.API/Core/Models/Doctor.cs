@@ -8,8 +8,10 @@ namespace Tabibak.API.Core.Models
         [Key]
         public int DoctorId { get; set; }
         public string Name => User.FullName;
-        public string Qualification { get; set; }
-        public string ContactInfo { get; set; }
+        public string? Qualification { get; set; }
+        public string? ContactInfo { get; set; }
+        public string? Description { get; set; }
+        public decimal? Fees { get; set; }
 
         // ✅ Link to ApplicationUser (One-to-One)
         public string UserId { get; set; }

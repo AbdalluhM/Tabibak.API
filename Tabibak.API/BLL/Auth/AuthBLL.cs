@@ -187,10 +187,10 @@ namespace Tabibak.Api.BLL.Auth
                 // ✅ Create Doctor or Patient record
                 if (inputDto.Role == RoleEnum.Doctor)
                 {
-                    var mappedDoctor = _mapper.Map<Doctor>(inputDto.Doctor);
-                    mappedDoctor.UserId = user.Id;
-
-                    _context.Add(mappedDoctor);
+                    _context.Add(new Doctor
+                    {
+                        UserId = user.Id,
+                    });
                 }
 
                 else if (inputDto.Role == RoleEnum.Patient)

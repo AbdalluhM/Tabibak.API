@@ -14,6 +14,7 @@ namespace Tabibak.API.Core.Models
 
         public ICollection<Appointment> Appointments { get; set; } = new List<Appointment>();
         public ICollection<Review> Reviews { get; set; } = new List<Review>();
+        public ICollection<FavoriteDoctor> FavoriteDoctors { get; set; } = new List<FavoriteDoctor>();
     }
 
 }

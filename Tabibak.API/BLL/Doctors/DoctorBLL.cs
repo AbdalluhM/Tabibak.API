@@ -17,6 +17,11 @@ namespace Tabibak.API.BLL.Doctors
             _dbcontext = dbcontext;
         }
 
+        public Task<IResponse<DoctorDetailResultDto>> GetByIdAsync(int id)
+        {
+            throw new NotImplementedException();
+        }
+
         public async Task<IResponse<List<GetDoctoctorBySpecialtyDto>>> GetDoctorsBySpecialtyAsync(int specialtyId)
         {
             var response = new Response<List<GetDoctoctorBySpecialtyDto>>();
