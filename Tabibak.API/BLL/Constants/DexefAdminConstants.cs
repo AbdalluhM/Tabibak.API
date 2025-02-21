@@ -365,6 +365,8 @@ namespace Tabibak.Api.BLL.Constants
 
         [Description("Failed : Active musn't be more than one  ! . . .")]
         MoreActive = 7076,
+        [Description("Failed : Appointment cannot be started")]
+        InvalidOperation = 7077,
 
 
         #region

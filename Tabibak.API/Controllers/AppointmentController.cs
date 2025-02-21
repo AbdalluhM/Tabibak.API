@@ -102,6 +102,46 @@ namespace Tabibak.API.Controllers
                 return NotFound();
             return NoContent();
         }
+
+        [HttpPost("cancel/{appointmentId}")]
+        [Authorize(Roles = nameof(RoleEnum.Patient))]
+        public async Task<IActionResult> CancelAppointment(int appointmentId)
+        {
+            var result = await _appointmentBLL.CancelAppointmentAsync(appointmentId, UserId);
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result);
+            }
+            return Ok(result);
+        }
+
+        [HttpPost("start/{appointmentId}")]
+        [Authorize(Roles = nameof(RoleEnum.Doctor))]
+        public async Task<IActionResult> StartAppointment(int appointmentId)
+        {
+            var result = await _appointmentBLL.StartAppointmentAsync(appointmentId);
+
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result);
+            }
+
+            return Ok(result);
+        }
+
+        [HttpPost("end/{appointmentId}")]
+        [Authorize(Roles = nameof(RoleEnum.Doctor))]
+        public async Task<IActionResult> EndAppointment(int appointmentId)
+        {
+            var result = await _appointmentBLL.EndAppointmentAsync(appointmentId, UserId);
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result);
+            }
+            return Ok(result);
+        }
+
+
     }
 }
 

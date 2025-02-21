@@ -15,5 +15,8 @@ namespace Tabibak.API.BLL.Appointments
         Task<IResponse<bool>> DeleteAppointmentAsync(int id);
         Task<IResponse<List<AppointmentResponseDto>>> GetAppointmentsByDoctorAsync(int doctorId);
         Task<IResponse<List<AppointmentResponseDto>>> GetAppointmentsByPatientAsync(int patientId);
+        Task<IResponse<bool>> StartAppointmentAsync(int appointmentId);
+        Task<IResponse<bool>> CancelAppointmentAsync(int appointmentId, int patientId);
+        Task<IResponse<bool>> EndAppointmentAsync(int appointmentId, int doctorId);
     }
 }

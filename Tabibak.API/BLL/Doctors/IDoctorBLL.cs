@@ -6,6 +6,6 @@ namespace Tabibak.API.BLL.Doctors
     public interface IDoctorBLL
     {
         Task<IResponse<List<GetDoctoctorBySpecialtyDto>>> GetDoctorsBySpecialtyAsync(int specialtyId);
-        Task<IResponse<DoctorDetailResultDto>> GetByIdAsync(int id);
+        Task<IResponse<DoctorDetailResultDto>> GetDoctorDetailsAsync(int doctorId);
     }
 }

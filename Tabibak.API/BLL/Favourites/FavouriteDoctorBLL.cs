@@ -3,6 +3,7 @@ using Tabibak.Api.BLL;
 using Tabibak.Api.BLL.BaseReponse;
 using Tabibak.Api.BLL.Constants;
 using Tabibak.API.Core.Models;
+using Tabibak.API.Dtos.Favourites;
 using Tabibak.Context;
 
 namespace Tabibak.API.BLL.Favourites
@@ -55,5 +56,25 @@ namespace Tabibak.API.BLL.Favourites
 
             return response.CreateResponse(true);
         }
+        public async Task<IResponse<List<DoctorResponseDto>>> GetFavoritesByPatientIdAsync(int patientId)
+        {
+            var response = new Response<List<DoctorResponseDto>>();
+
+            var favoriteDoctors = await _context.FavoriteDoctors
+                .Where(f => f.PatientId == patientId)
+                .Include(f => f.Doctor)
+                .ThenInclude(d => d.User)
+                .Select(f => new DoctorResponseDto
+                {
+                    DoctorId = f.Doctor.DoctorId,
+                    DoctorName = f.Doctor.User.FullName,
+                    Qualification = f.Doctor.Qualification,
+                    ContactInfo = f.Doctor.ContactInfo
+                })
+                .ToListAsync();
+
+            return response.CreateResponse(favoriteDoctors);
+        }
+
     }
 }

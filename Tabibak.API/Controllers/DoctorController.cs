@@ -19,5 +19,13 @@ namespace Tabibak.API.Controllers
         {
             return Ok(await _doctorBLL.GetDoctorsBySpecialtyAsync(specialtyId));
         }
+
+        [HttpGet("details/{doctorId}")]
+        public async Task<IActionResult> GetDoctorDetails(int doctorId)
+        {
+            var result = await _doctorBLL.GetDoctorDetailsAsync(doctorId);
+            return Ok(result);
+        }
+
     }
 }

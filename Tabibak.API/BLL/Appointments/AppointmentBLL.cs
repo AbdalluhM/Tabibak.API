@@ -265,5 +265,81 @@ namespace Tabibak.API.BLL.Appointments
                 })
                 .ToListAsync());
         }
+
+        public async Task<IResponse<bool>> CancelAppointmentAsync(int appointmentId, int patientId)
+        {
+            var response = new Response<bool>();
+
+            var appointment = await _context.Appointments
+                .FirstOrDefaultAsync(a => a.AppointmentId == appointmentId && a.PatientId == patientId);
+
+            if (appointment == null)
+            {
+                return response.CreateResponse(MessageCodes.NotFound, nameof(Doctor));
+            }
+
+            if (appointment.Status != AppointmentStatus.Available)
+            {
+                return response.CreateResponse(MessageCodes.InvalidOperation);
+            }
+
+            // ✅ Cancel appointment
+            appointment.Status = AppointmentStatus.Cancelled;
+            await _context.SaveChangesAsync();
+
+            return response.CreateResponse(true);
+        }
+
+
+        public async Task<IResponse<bool>> StartAppointmentAsync(int appointmentId)
+        {
+            var response = new Response<bool>();
+
+            var appointment = await _context.Appointments
+                .FirstOrDefaultAsync(a => a.AppointmentId == appointmentId);
+
+            if (appointment == null)
+            {
+                return response.CreateResponse(MessageCodes.NotFound, "Appointment not found");
+            }
+
+            if (appointment.Status != AppointmentStatus.Available)
+            {
+                return response.CreateResponse(MessageCodes.InvalidOperation);
+            }
+
+            // ✅ Start the appointment
+            appointment.StartTime = TimeOnly.FromDateTime(DateTime.Now);
+            appointment.Status = AppointmentStatus.Booked;
+
+            await _context.SaveChangesAsync();
+            return response.CreateResponse(true);
+        }
+        public async Task<IResponse<bool>> EndAppointmentAsync(int appointmentId, int doctorId)
+        {
+            var response = new Response<bool>();
+
+            var appointment = await _context.Appointments
+                .FirstOrDefaultAsync(a => a.AppointmentId == appointmentId && a.DoctorId == doctorId);
+
+            if (appointment == null)
+            {
+                return response.CreateResponse(MessageCodes.NotFound, nameof(Doctor));
+            }
+
+            if (appointment.Status != AppointmentStatus.Booked)
+            {
+                return response.CreateResponse(MessageCodes.InvalidOperation);
+            }
+
+            // ✅ End appointment
+            appointment.EndTime = TimeOnly.FromDateTime(DateTime.Now);
+            appointment.Status = AppointmentStatus.Completed;
+
+            await _context.SaveChangesAsync();
+            return response.CreateResponse(true);
+        }
+
+
     }
 }

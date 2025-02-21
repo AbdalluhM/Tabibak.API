@@ -8,6 +8,9 @@ namespace Tabibak.API.Core.Models
         [Key]
         public int AppointmentId { get; set; }
         public DateTime AppointmentDate { get; set; }
+
+        public TimeOnly? StartTime { get; set; }
+        public TimeOnly? EndTime { get; set; }
         public int DoctorId { get; set; }
         public Doctor Doctor { get; set; }
 

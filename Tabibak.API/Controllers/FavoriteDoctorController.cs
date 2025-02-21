@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Tabibak.API.BLL.Favourites;
 using Tabibak.API.Dtos.Favourites;
 
@@ -6,7 +7,8 @@ namespace Tabibak.API.Controllers
 {
     [Route("api/favorites")]
     [ApiController]
-    public class FavoriteDoctorController : ControllerBase
+    [Authorize]
+    public class FavoriteDoctorController : BaseController
     {
         private readonly IFavouriteDoctorBLL _favoriteDoctorService;
 
@@ -18,16 +20,23 @@ namespace Tabibak.API.Controllers
         [HttpPost("add")]
         public async Task<IActionResult> AddToFavorites([FromBody] FavoriteDoctorDto dto)
         {
-            var result = await _favoriteDoctorService.AddToFavoritesAsync(dto.PatientId, dto.DoctorId);
+            var result = await _favoriteDoctorService.AddToFavoritesAsync(UserId, dto.DoctorId);
             return Ok(result);
         }
 
         [HttpDelete("remove")]
         public async Task<IActionResult> RemoveFromFavorites([FromBody] FavoriteDoctorDto dto)
         {
-            var result = await _favoriteDoctorService.RemoveFromFavoritesAsync(dto.PatientId, dto.DoctorId);
+            var result = await _favoriteDoctorService.RemoveFromFavoritesAsync(UserId, dto.DoctorId);
             return Ok(result);
         }
+        [HttpGet]
+        public async Task<IActionResult> GetFavorites()
+        {
+            var result = await _favoriteDoctorService.GetFavoritesByPatientIdAsync(UserId);
+            return Ok(result);
+        }
+
     }
 
 }
