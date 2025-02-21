@@ -154,8 +154,10 @@ namespace Tabibak.API.BLL.Appointments
         {
             var response = new Response<List<AppointmentResponseDto>>();
             return response.CreateResponse(await _context.Appointments
-                .Include(a => a.Doctor)
+                 .Include(a => a.Doctor)
+                .ThenInclude(d => d.User)
                 .Include(a => a.Patient)
+                .ThenInclude(a => a.User)
                 .Select(a => new AppointmentResponseDto
                 {
                     AppointmentId = a.AppointmentId,
@@ -175,7 +177,9 @@ namespace Tabibak.API.BLL.Appointments
 
             var appointment = await _context.Appointments
                 .Include(a => a.Doctor)
+                .ThenInclude(d => d.User)
                 .Include(a => a.Patient)
+                .ThenInclude(a => a.User)
                 .FirstOrDefaultAsync(a => a.AppointmentId == id);
 
             if (appointment == null)
@@ -224,7 +228,10 @@ namespace Tabibak.API.BLL.Appointments
             var response = new Response<List<AppointmentResponseDto>>();
             return response.CreateResponse(await _context.Appointments
                 .Where(a => a.DoctorId == doctorId)
+                 .Include(a => a.Doctor)
+                .ThenInclude(d => d.User)
                 .Include(a => a.Patient)
+                .ThenInclude(a => a.User)
                 .Select(a => new AppointmentResponseDto
                 {
                     AppointmentId = a.AppointmentId,
@@ -243,7 +250,10 @@ namespace Tabibak.API.BLL.Appointments
             var response = new Response<List<AppointmentResponseDto>>();
             return response.CreateResponse(await _context.Appointments
                 .Where(a => a.PatientId == patientId)
-                .Include(a => a.Doctor)
+                 .Include(a => a.Doctor)
+                .ThenInclude(d => d.User)
+                .Include(a => a.Patient)
+                .ThenInclude(a => a.User)
                 .Select(a => new AppointmentResponseDto
                 {
                     AppointmentId = a.AppointmentId,
