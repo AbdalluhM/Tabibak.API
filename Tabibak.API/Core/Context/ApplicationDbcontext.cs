@@ -98,6 +98,7 @@ namespace Tabibak.Context
         public DbSet<Review> Reviews { get; set; }
         public DbSet<Patient> Patients { get; set; }
         public DbSet<FavoriteDoctor> FavoriteDoctors { get; set; }
+        public DbSet<Location> Locations { get; set; }
 
     }
 }

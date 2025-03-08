@@ -19,22 +19,64 @@ namespace Tabibak.API.BLL.Doctors
             _mapper = mapper;
             _dbcontext = dbcontext;
         }
-        public async Task<IResponse<List<GetDoctoctorBySpecialtyDto>>> GetDoctorsBySpecialtyAsync(int specialtyId)
+        public async Task<IResponse<List<GetDoctorBySpecialtyDto>>> GetDoctorsBySpecialtyAsync(int specialtyId,
+                                                                                                    int? locationId = null,
+                                                                                                    bool acceptPromoCode = false,
+                                                                                                    decimal? minFees = null,
+                                                                                                    decimal? maxFees = null,
+                                                                                                    DateTime? dateFilter = null,
+                                                                                                    string gender = null)
         {
-            var response = new Response<List<GetDoctoctorBySpecialtyDto>>();
-            try
-            {
-                var doctors = await _dbcontext.Doctors
-                    .Where(d => d.DoctorSpecialties.Any(s => s.SpecialtyId == specialtyId))  // ✅ FIXED QUERY
-                    .Include(d => d.User)  // ✅ Ensure ApplicationUser data is loaded
-                    .ToListAsync();
+            var response = new Response<List<GetDoctorBySpecialtyDto>>();
+            // Start building query
+            var query = _dbcontext.Doctors
+                .Include(d => d.User)
+                .Include(d => d.DoctorSpecialties)
+                .ThenInclude(ds => ds.Specialty)
+                .Include(d => d.Appointments)
+                .Where(d => d.DoctorSpecialties.Any(ds => ds.SpecialtyId == specialtyId))
+                .AsQueryable();
 
-                return response.CreateResponse(_mapper.Map<List<GetDoctoctorBySpecialtyDto>>(doctors));
-            }
-            catch (Exception e)
+            // ✅ Filter by Location
+            if (locationId > 0)
             {
-                throw;  // Keep for debugging
+                query = query.Where(d => d.LocationId == locationId);
             }
+
+            // ✅ Filter by Examination Fees Range
+            if (minFees.HasValue)
+            {
+                query = query.Where(d => d.Fees >= minFees);
+            }
+            if (maxFees.HasValue)
+            {
+                query = query.Where(d => d.Fees <= maxFees);
+            }
+
+            // ✅ Filter by Available Dates (if appointments exist)
+            if (dateFilter.HasValue)
+            {
+                query = query.Where(d => d.Appointments.Any(a => a.AppointmentDate.Date == dateFilter.Value.Date));
+            }
+
+            // ✅ Filter by Gender
+            if (!string.IsNullOrEmpty(gender) && gender.ToLower() != "all")
+            {
+                if (Enum.TryParse(typeof(GenderEnum), gender, true, out var genderEnum))
+                {
+                    query = query.Where(d => d.Gender == (GenderEnum)genderEnum);
+                }
+            }
+
+
+            // ✅ Filter by Promo Code Support (Assuming doctors have this option)
+            if (acceptPromoCode)
+            {
+                query = query.Where(d => d.AcceptPromoCode);
+            }
+
+            var doctors = await query.ToListAsync();
+            return response.CreateResponse(_mapper.Map<List<GetDoctorBySpecialtyDto>>(doctors));
         }
         public async Task<IResponse<DoctorDetailResultDto>> GetDoctorDetailsAsync(int doctorId)
         {

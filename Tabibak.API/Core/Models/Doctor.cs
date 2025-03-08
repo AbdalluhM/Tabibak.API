@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using Tabibak.API.Helpers.Enums;
 using Tabibak.Models;
 
 namespace Tabibak.API.Core.Models
@@ -7,12 +8,22 @@ namespace Tabibak.API.Core.Models
     {
         [Key]
         public int DoctorId { get; set; }
+
         public string Name => User.FullName;
+
         public string? Qualification { get; set; }
+
         public string? ContactInfo { get; set; }
+
         public string? Description { get; set; }
+
         public decimal? Fees { get; set; }
 
+        public bool AcceptPromoCode { get; set; } = false;
+        public GenderEnum Gender { get; set; }
+
+        public int? LocationId { get; set; }
+        public virtual Location Location { get; set; }
         // ✅ Link to ApplicationUser (One-to-One)
         public string UserId { get; set; }
         public virtual ApplicationUser User { get; set; }
@@ -21,8 +32,10 @@ namespace Tabibak.API.Core.Models
         public ICollection<DoctorSpecialty> DoctorSpecialties { get; set; } = new List<DoctorSpecialty>();
 
         public ICollection<Appointment> Appointments { get; set; } = new List<Appointment>();
+
         public ICollection<Review> Reviews { get; set; } = new List<Review>();
     }
+
 
 
 }

@@ -15,9 +15,15 @@ namespace Tabibak.API.Controllers
         }
 
         [HttpGet("{specialtyId}")]
-        public async Task<IActionResult> GetDoctorsBySpecialty(int specialtyId)
+        public async Task<IActionResult> GetDoctorsBySpecialty(int specialtyId,
+                                                                int? locationId = null,
+                                                                bool acceptPromoCode = false,
+                                                                decimal? minFees = null,
+                                                                decimal? maxFees = null,
+                                                                DateTime? dateFilter = null,
+                                                                string gender = null)
         {
-            return Ok(await _doctorBLL.GetDoctorsBySpecialtyAsync(specialtyId));
+            return Ok(await _doctorBLL.GetDoctorsBySpecialtyAsync(specialtyId, locationId, acceptPromoCode, minFees, maxFees, dateFilter, gender));
         }
 
         [HttpGet("details/{doctorId}")]

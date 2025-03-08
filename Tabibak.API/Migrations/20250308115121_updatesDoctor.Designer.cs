@@ -11,9 +11,9 @@ using Tabibak.Context;
 
 namespace Tabibak.API.Migrations
 {
-    [DbContext(typeof(  ApplicationDbcontext))]
-    [Migration("20250221224446_updateApoointment")]
-    partial class updateApoointment
+    [DbContext(typeof(ApplicationDbcontext))]
+    [Migration("20250308115121_updatesDoctor")]
+    partial class updatesDoctor
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -222,6 +222,9 @@ namespace Tabibak.API.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("DoctorId"));
 
+                    b.Property<bool>("AcceptPromoCode")
+                        .HasColumnType("bit");
+
                     b.Property<string>("ContactInfo")
                         .HasColumnType("nvarchar(max)");
 
@@ -230,6 +233,12 @@ namespace Tabibak.API.Migrations
 
                     b.Property<decimal?>("Fees")
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("Gender")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Location")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Qualification")
                         .HasColumnType("nvarchar(max)");
@@ -469,17 +478,17 @@ namespace Tabibak.API.Migrations
                         {
                             Id = "1001",
                             AccessFailedCount = 0,
-                            ConcurrencyStamp = "78bb6e83-6837-4593-bcf1-b01011a96b70",
+                            ConcurrencyStamp = "47da9cf2-4721-4eec-affa-8b694d959e3f",
                             Email = "admin@example.com",
                             EmailConfirmed = true,
                             FullName = "admin",
                             LockoutEnabled = false,
                             NormalizedEmail = "ADMIN@EXAMPLE.COM",
                             NormalizedUserName = "ADMIN",
-                            PasswordHash = "AQAAAAIAAYagAAAAEOfNNwMe26wwIj886y5yWY/kd8KUO0d/mUcwTt5XXy6LwB++Eb9YCn4fpTr1fjEmxw==",
+                            PasswordHash = "AQAAAAIAAYagAAAAEL2+2TA1/DV41w/qglzxWkhVHiTV2LGvFOQROLh/0VAu45t90q8ErcvX71Gnoawt1A==",
                             PhoneNumberConfirmed = false,
                             Role = "admin",
-                            SecurityStamp = "a1203e4d-f159-499a-bb58-7620c4130668",
+                            SecurityStamp = "3398d7fb-ab3e-449f-9967-34856e1212bc",
                             TwoFactorEnabled = false,
                             UserName = "admin"
                         });

@@ -1,6 +1,6 @@
 ﻿namespace Tabibak.API.Dtos.Specialities
 {
-    public class GetDoctoctorBySpecialtyDto
+    public class GetDoctorBySpecialtyDto
     {
         public int DoctorId { get; set; }
         public string Name { get; set; }

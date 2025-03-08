@@ -40,7 +40,8 @@ namespace Tabibak.API.BLL.Reviews
                 DoctorId = dto.DoctorId,
                 PatientId = dto.PatientId,
                 Rating = dto.Rating,
-                Comments = dto.Comments
+                Comments = dto.Comments,
+                CreatedAt = DateTime.UtcNow,
             };
 
             _context.Reviews.Add(review);
@@ -55,7 +56,7 @@ namespace Tabibak.API.BLL.Reviews
                 PatientName = patient.User.FullName,
                 Rating = review.Rating,
                 Comments = review.Comments,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = review.CreatedAt,
             });
         }
 

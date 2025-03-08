@@ -11,7 +11,7 @@ namespace Tabibak.Api.Mapper
             //CreateMap<UserInputDto, ApplicationUser>();
 
 
-            CreateMap<Doctor, GetDoctoctorBySpecialtyDto>();
+            CreateMap<Doctor, GetDoctorBySpecialtyDto>();
             CreateMap<Doctor, DoctorDetailResultDto>();
 
 
