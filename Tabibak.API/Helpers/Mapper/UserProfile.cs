@@ -11,7 +11,10 @@ namespace Tabibak.Api.Mapper
             //CreateMap<UserInputDto, ApplicationUser>();
 
 
-            CreateMap<Doctor, GetDoctorBySpecialtyDto>();
+            CreateMap<Doctor, GetDoctorBySpecialtyDto>()
+                .ForMember(dest => dest.Review, opt => opt.MapFrom(src => src.Reviews.Any() ? src.Reviews.Average(r => r.Rating) : 0))
+                 .ForMember(dest => dest.IsFavorite, opt => opt.Ignore());
+            ;
             CreateMap<Doctor, DoctorDetailResultDto>();
 
 

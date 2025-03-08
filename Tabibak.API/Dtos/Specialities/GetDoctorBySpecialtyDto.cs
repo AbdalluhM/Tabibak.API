@@ -7,6 +7,8 @@
         public string Qualification { get; set; }
         public string ContactInfo { get; set; }
         public decimal Fees { get; set; }
+        public double Review { get; set; }
+        public bool IsFavorite { get; set; }
 
     }
     public class DoctorDetailResultDto
@@ -18,6 +20,8 @@
         public string Description { get; set; }
         public decimal Fees { get; set; }
         public double Review { get; set; }
+        public bool HasReview { get; set; }
+        public double PatienReview { get; set; }
         public TimeOnly WaitedTime { get; set; }
     }
 }

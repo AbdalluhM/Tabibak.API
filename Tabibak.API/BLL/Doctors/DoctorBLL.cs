@@ -19,7 +19,7 @@ namespace Tabibak.API.BLL.Doctors
             _mapper = mapper;
             _dbcontext = dbcontext;
         }
-        public async Task<IResponse<List<GetDoctorBySpecialtyDto>>> GetDoctorsBySpecialtyAsync(int specialtyId,
+        public async Task<IResponse<List<GetDoctorBySpecialtyDto>>> GetDoctorsBySpecialtyAsync(int patientId, int specialtyId,
                                                                                                     int? locationId = null,
                                                                                                     bool acceptPromoCode = false,
                                                                                                     decimal? minFees = null,
@@ -76,9 +76,23 @@ namespace Tabibak.API.BLL.Doctors
             }
 
             var doctors = await query.ToListAsync();
-            return response.CreateResponse(_mapper.Map<List<GetDoctorBySpecialtyDto>>(doctors));
+            var mappedDoctors = _mapper.Map<List<GetDoctorBySpecialtyDto>>(doctors);
+
+            // ✅ Get the list of favorite doctors for this user
+            var favoriteDoctorIds = await _dbcontext.FavoriteDoctors
+                .Where(f => f.PatientId == patientId)
+                .Select(f => f.DoctorId)
+                .ToListAsync();
+
+            // ✅ Update IsFavorite field based on user favorites
+            foreach (var doctor in mappedDoctors)
+            {
+                doctor.IsFavorite = favoriteDoctorIds.Contains(doctor.DoctorId);
+            }
+
+            return response.CreateResponse(mappedDoctors);
         }
-        public async Task<IResponse<DoctorDetailResultDto>> GetDoctorDetailsAsync(int doctorId)
+        public async Task<IResponse<DoctorDetailResultDto>> GetDoctorDetailsAsync(int doctorId, int patientId)
         {
             var response = new Response<DoctorDetailResultDto>();
 
@@ -88,6 +102,10 @@ namespace Tabibak.API.BLL.Doctors
                 .Include(d => d.Reviews)
                 .Include(d => d.Appointments)
                 .FirstOrDefaultAsync();
+
+            var review = _dbcontext.Patients.Include(p => p.Reviews)
+                                                    .FirstOrDefault(p => p.PatientId == patientId)?
+                                                    .Reviews.Where(r => r.DoctorId == doctorId).FirstOrDefault();
 
             if (doctor == null)
             {
@@ -106,6 +124,8 @@ namespace Tabibak.API.BLL.Doctors
                 Description = doctor.Description ?? string.Empty,
                 Fees = doctor.Fees ?? 0,
                 Review = doctor.Reviews.Any() ? doctor.Reviews.Average(r => r.Rating) : 0,
+                HasReview = review is not null,
+                PatienReview = review?.Rating ?? 0,
                 WaitedTime = waitedTime
             };
 

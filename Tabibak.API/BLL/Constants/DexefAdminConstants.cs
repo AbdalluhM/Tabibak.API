@@ -367,6 +367,9 @@ namespace Tabibak.Api.BLL.Constants
         MoreActive = 7076,
         [Description("Failed : Appointment cannot be started")]
         InvalidOperation = 7077,
+        [Description("Failed : You can only review doctors after completing an appointment")]
+        ReviewPermission = 7078,
+
 
 
         #region

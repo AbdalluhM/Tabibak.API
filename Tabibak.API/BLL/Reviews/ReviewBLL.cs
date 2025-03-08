@@ -4,6 +4,7 @@ using Tabibak.Api.BLL.Constants;
 using Tabibak.API.Core.Models;
 using Tabibak.API.Dtos;
 using Tabibak.API.Dtos.Reviews;
+using Tabibak.API.Helpers.Enums;
 using Tabibak.Context;
 
 namespace Tabibak.API.BLL.Reviews
@@ -22,18 +23,30 @@ namespace Tabibak.API.BLL.Reviews
         {
             var response = new Response<ReviewResponseDto>();
 
-            var doctor = await _context.Doctors.Include(d => d.User).FirstOrDefaultAsync(d => d.DoctorId == dto.DoctorId);
-            var patient = await _context.Patients.Include(d => d.User).FirstOrDefaultAsync(d => d.PatientId == dto.PatientId);
+            var doctor = await _context.Doctors
+                .Include(d => d.User)
+                .FirstOrDefaultAsync(d => d.DoctorId == dto.DoctorId);
+
+            var patient = await _context.Patients
+                .Include(d => d.User)
+                .FirstOrDefaultAsync(d => d.PatientId == dto.PatientId);
 
             if (doctor == null || patient == null)
-                return response.CreateResponse(MessageCodes.NotFound, $"{nameof(doctor)}or{nameof(patient)}");
+                return response.CreateResponse(MessageCodes.NotFound, $"{nameof(doctor)} or {nameof(patient)}");
 
-            // ✅ Check if patient had an appointment with the doctor
-            //bool hasAppointment = await _context.Appointments
-            //    .AnyAsync(a => a.DoctorId == dto.DoctorId && a.PatientId == dto.PatientId);
+            // ✅ Check if patient has already reviewed this doctor
+            bool alreadyReviewed = await _context.Reviews
+                .AnyAsync(r => r.DoctorId == dto.DoctorId && r.PatientId == dto.PatientId);
 
-            //if (!hasAppointment)
-            //    throw new InvalidOperationException("You can only review doctors after an appointment.");
+            if (alreadyReviewed)
+                return response.CreateResponse(MessageCodes.AlreadyExists, nameof(Review));
+
+            // ✅ Check if the patient had an appointment with the doctor before reviewing
+            bool hasAppointment = await _context.Appointments
+                .AnyAsync(a => a.DoctorId == dto.DoctorId && a.PatientId == dto.PatientId && a.Status == AppointmentStatus.Completed);
+
+            if (!hasAppointment)
+                return response.CreateResponse(MessageCodes.ReviewPermission);
 
             var review = new Review
             {
@@ -59,6 +72,7 @@ namespace Tabibak.API.BLL.Reviews
                 CreatedAt = review.CreatedAt,
             });
         }
+
 
         // ✅ Get all reviews
         public async Task<IResponse<List<ReviewResponseDto>>> GetAllReviewsAsync()
@@ -171,27 +185,6 @@ namespace Tabibak.API.BLL.Reviews
                 PageSize = pageSize
             };
         }
-        //public async Task<IResponse<List<ReviewResponseDto>>> GetReviewsByPatientAsync(int patientId)
-        //{
-        //    var response = new Response<List<ReviewResponseDto>>();
-        //    return response.CreateResponse(await _context.Reviews
-        //        .Where(r => r.PatientId == patientId)
-        //        .Include(r => r.Doctor)
-        //        .Select(r => new ReviewResponseDto
-        //        {
-        //            ReviewId = r.ReviewId,
-        //            DoctorId = r.DoctorId,
-        //            DoctorName = r.Doctor.Name,
-        //            PatientId = r.PatientId,
-        //            PatientName = r.Patient.Name,
-        //            Rating = r.Rating,
-        //            Comments = r.Comments,
-        //            CreatedAt = r.CreatedAt
-        //        })
-        //        .ToListAsync());
-        //}
-
-        // ✅ Update a review
         public async Task<IResponse<bool>> UpdateReviewAsync(int reviewId, UpdateReviewDto dto)
         {
             var response = new Response<bool>();
