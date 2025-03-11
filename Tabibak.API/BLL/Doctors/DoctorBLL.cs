@@ -126,6 +126,7 @@ namespace Tabibak.API.BLL.Doctors
                 Review = doctor.Reviews.Any() ? doctor.Reviews.Average(r => r.Rating) : 0,
                 HasReview = review is not null,
                 PatienReview = review?.Rating ?? 0,
+                ReviewContent = review?.Comments ?? string.Empty,
                 WaitedTime = waitedTime
             };
 

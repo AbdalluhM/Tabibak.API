@@ -21,6 +21,7 @@
         public decimal Fees { get; set; }
         public double Review { get; set; }
         public bool HasReview { get; set; }
+        public string ReviewContent { get; set; } = null!;
         public double PatienReview { get; set; }
         public TimeOnly WaitedTime { get; set; }
     }

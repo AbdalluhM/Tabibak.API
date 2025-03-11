@@ -37,7 +37,7 @@ namespace Tabibak.API.Controllers
                 AppointmentDate = AppointmentDate,
                 DoctorId = UserId,
             });
-            return CreatedAtAction(nameof(GetById), new { id = appointment.Data.AppointmentId }, appointment);
+            return Ok(appointment);
         }
         [HttpPost("book")]
         [Authorize(Roles = nameof(RoleEnum.Patient))]
@@ -77,10 +77,10 @@ namespace Tabibak.API.Controllers
         }
 
         // Get appointments by patient
-        [HttpGet("patient/{patientId}")]
-        public async Task<IActionResult> GetByPatient(int patientId)
+        [HttpGet("patient-booking")]
+        public async Task<IActionResult> GetByPatient()
         {
-            return Ok(await _appointmentBLL.GetAppointmentsByPatientAsync(patientId));
+            return Ok(await _appointmentBLL.GetAppointmentsByPatientAsync(UserId));
         }
 
         // Update an appointment
@@ -108,10 +108,6 @@ namespace Tabibak.API.Controllers
         public async Task<IActionResult> CancelAppointment(int appointmentId)
         {
             var result = await _appointmentBLL.CancelAppointmentAsync(appointmentId, UserId);
-            if (!result.IsSuccess)
-            {
-                return BadRequest(result);
-            }
             return Ok(result);
         }
 

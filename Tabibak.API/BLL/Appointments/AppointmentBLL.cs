@@ -275,10 +275,10 @@ namespace Tabibak.API.BLL.Appointments
 
             if (appointment == null)
             {
-                return response.CreateResponse(MessageCodes.NotFound, nameof(Doctor));
+                return response.CreateResponse(MessageCodes.NotFound, nameof(Appointment));
             }
 
-            if (appointment.Status != AppointmentStatus.Available)
+            if (appointment.Status != AppointmentStatus.Booked)
             {
                 return response.CreateResponse(MessageCodes.InvalidOperation);
             }
