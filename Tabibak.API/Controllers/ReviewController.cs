@@ -1,10 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Tabibak.Api.BLL.BaseReponse;
 using Tabibak.API.BLL.Reviews;
 using Tabibak.API.Controllers;
 using Tabibak.API.Core.Models;
-using Tabibak.API.Dtos;
 using Tabibak.API.Dtos.Reviews;
 
 [Route("api/[controller]")]
@@ -21,7 +19,6 @@ public class ReviewController : BaseController
 
     // ✅ Create a new review
     [HttpPost]
-    [Produces<IResponse<ReviewResponseDto>>]
     public async Task<IActionResult> Create([FromBody] CreateReviewDto dto)
     {
         dto.PatientId = UserId;
@@ -33,7 +30,6 @@ public class ReviewController : BaseController
 
     // ✅ Get all reviews
     [HttpGet]
-    [Produces<IResponse<List<ReviewResponseDto>>>]
     public async Task<IActionResult> GetAll()
     {
         return Ok(await _reviewBLL.GetAllReviewsAsync());
@@ -41,7 +37,6 @@ public class ReviewController : BaseController
 
     // ✅ Get reviews by doctor
     [HttpGet("doctor/{doctorId}")]
-    [Produces<PagedResult<ReviewResponsePagedDto>>]
     public async Task<IActionResult> GetDoctorReviews(int doctorId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
     {
         if (pageNumber < 1 || pageSize < 1)
@@ -53,7 +48,6 @@ public class ReviewController : BaseController
 
     // ✅ Get reviews by patient
     [HttpGet("patient/{patientId}")]
-    [Produces<PagedResult<ReviewResponsePagedDto>>]
     public async Task<IActionResult> GetPatientReviews(int patientId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
     {
         if (pageNumber < 1 || pageSize < 1)
@@ -65,7 +59,6 @@ public class ReviewController : BaseController
 
     // ✅ Update a review
     [HttpPut("{id}")]
-    [Produces<IResponse<bool>>]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateReviewDto dto)
     {
         var success = await _reviewBLL.UpdateReviewAsync(id, dto);
@@ -76,7 +69,6 @@ public class ReviewController : BaseController
 
     // ✅ Delete a review
     [HttpDelete("{id}")]
-    [Produces<IResponse<bool>>]
     public async Task<IActionResult> Delete(int id)
     {
         var success = await _reviewBLL.DeleteReviewAsync(id);
