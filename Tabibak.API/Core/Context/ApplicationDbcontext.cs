@@ -56,6 +56,21 @@ namespace Tabibak.Context
                 .HasColumnType("nvarchar(450)");
             SeedRoles(modelBuilder);
             SeedAdminUser(modelBuilder);
+
+
+
+            modelBuilder.Entity<Appointment>()
+            .Property(a => a.EndTime)
+            .HasConversion(
+                v => v.HasValue ? v.Value.ToTimeSpan() : (TimeSpan?)null,  // Convert TimeOnly? -> TimeSpan?
+                v => v.HasValue ? TimeOnly.FromTimeSpan(v.Value) : (TimeOnly?)null  // Convert TimeSpan? -> TimeOnly?
+            );
+            modelBuilder.Entity<Appointment>()
+           .Property(a => a.StartTime)
+           .HasConversion(
+               v => v.HasValue ? v.Value.ToTimeSpan() : (TimeSpan?)null,  // Convert TimeOnly? -> TimeSpan?
+               v => v.HasValue ? TimeOnly.FromTimeSpan(v.Value) : (TimeOnly?)null  // Convert TimeSpan? -> TimeOnly?
+           );
             base.OnModelCreating(modelBuilder);
         }
         private void SeedRoles(ModelBuilder modelBuilder)
