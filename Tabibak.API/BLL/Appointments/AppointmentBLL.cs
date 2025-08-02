@@ -1,8 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using QRCoder;
 using Tabibak.Api.BLL.BaseReponse;
 using Tabibak.Api.BLL.Constants;
 using Tabibak.API.Core.Models;
 using Tabibak.API.Dtos.Appoinments;
+using Tabibak.API.Helpers;
 using Tabibak.API.Helpers.Enums;
 using Tabibak.Context;
 
@@ -340,6 +342,42 @@ namespace Tabibak.API.BLL.Appointments
             return response.CreateResponse(true);
         }
 
+        public async Task<IResponse<byte[]>> GenerateAppointmentQrCode(int id)
+        {
+            var response = new Response<byte[]>();
+            try
+            {
+                var appointment = _context.Appointments.Include(a => a.Patient)
+                    .ThenInclude(p => p.User)
+                    .Include(a => a.Doctor)
+                    .ThenInclude(d => d.User)
+                    .Include(d => d.Doctor)
+                    .ThenInclude(d => d.Location)
+                    .FirstOrDefault(a => a.AppointmentId == id);
+
+                if (appointment == null)
+                    return response.CreateResponse(MessageCodes.NotFound, nameof(Appointment));
+
+                // Generate QR code content from appointment
+                string qrContent = appointment.ToQRCodeContent();
+
+                // Create QR Code
+
+                QRCodeGenerator qrGenerator = new QRCodeGenerator();
+                QRCodeData qrCodeData = qrGenerator.CreateQrCode(qrContent, QRCodeGenerator.ECCLevel.Q);
+
+                // Use BitmapByteQRCode instead of QRCode class
+                BitmapByteQRCode qrCode = new BitmapByteQRCode(qrCodeData);
+                byte[] qrCodeBytes = qrCode.GetGraphic(20); // 20 pixels per module
+
+                return response.CreateResponse(qrCodeBytes);
+            }
+            catch (Exception e)
+            {
+
+                throw;
+            }
+        }
 
     }
 }

@@ -137,6 +137,16 @@ namespace Tabibak.API.Controllers
             return Ok(result);
         }
 
+        [HttpPost("Qrcode/{appointmentId}")]
+        public async Task<IActionResult> GenrateQrCode(int appointmentId)
+        {
+            var result = await _appointmentBLL.GenerateAppointmentQrCode(appointmentId);
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result);
+            }
+            return File(result.Data, "image/png", $"appointment-{appointmentId}.png");
+        }
 
     }
 }

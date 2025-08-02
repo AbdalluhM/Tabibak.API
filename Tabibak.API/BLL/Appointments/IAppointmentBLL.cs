@@ -18,5 +18,6 @@ namespace Tabibak.API.BLL.Appointments
         Task<IResponse<bool>> StartAppointmentAsync(int appointmentId);
         Task<IResponse<bool>> CancelAppointmentAsync(int appointmentId, int patientId);
         Task<IResponse<bool>> EndAppointmentAsync(int appointmentId, int doctorId);
+        Task<IResponse<byte[]>> GenerateAppointmentQrCode(int id);
     }
 }
