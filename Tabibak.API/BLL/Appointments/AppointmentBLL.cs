@@ -342,9 +342,9 @@ namespace Tabibak.API.BLL.Appointments
             return response.CreateResponse(true);
         }
 
-        public async Task<IResponse<byte[]>> GenerateAppointmentQrCode(int id)
+        public async Task<IResponse<string>> GenerateAppointmentQrCode(int id)
         {
-            var response = new Response<byte[]>();
+            var response = new Response<string>();
             try
             {
                 var appointment = _context.Appointments.Include(a => a.Patient)
@@ -370,7 +370,7 @@ namespace Tabibak.API.BLL.Appointments
                 BitmapByteQRCode qrCode = new BitmapByteQRCode(qrCodeData);
                 byte[] qrCodeBytes = qrCode.GetGraphic(20); // 20 pixels per module
 
-                return response.CreateResponse(qrCodeBytes);
+                return response.CreateResponse(Convert.ToBase64String(qrCodeBytes));
             }
             catch (Exception e)
             {

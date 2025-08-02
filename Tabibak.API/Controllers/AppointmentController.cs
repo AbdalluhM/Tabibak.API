@@ -145,7 +145,7 @@ namespace Tabibak.API.Controllers
             {
                 return BadRequest(result);
             }
-            return File(result.Data, "image/png", $"appointment-{appointmentId}.png");
+            return Ok(result.Data);
         }
 
     }
