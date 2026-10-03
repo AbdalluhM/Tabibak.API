@@ -1,4 +1,5 @@
 ﻿using Tabibak.Api.BLL;
+using Tabibak.Api.Helpers.Email;
 using Tabibak.Api.Mapper;
 
 namespace EcommerceApi.DependancyInjection
@@ -18,6 +19,7 @@ namespace EcommerceApi.DependancyInjection
             #endregion
 
 
+            services.AddScoped<IEmailSender, EmailSender>();
             services.AddAutoMapper(typeof(UserProfile));
             // Add Auto Mapper
             //services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());

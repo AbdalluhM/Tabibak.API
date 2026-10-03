@@ -9,5 +9,9 @@ namespace Tabibak.Api.BLL.Auth
         Task<IResponse<LoginResultDto>> LoginAsync(LoginInputDto inputDto);
         Task<IResponse<LoginResultDto>> RefreshTokenAsync(string token);
         Task<IResponse<bool>> RevokeTokenAsync(string token);
+        Task<IResponse<ProfileDto>> GetProfileAsync(string userId);
+        Task<IResponse<ProfileDto>> UpdateProfileAsync(string userId, UpdateProfileDto inputDto);
+        Task<IResponse<bool>> ChangePasswordAsync(string userId, ChangePasswordDto inputDto);
+        Task<IResponse<bool>> ForgotPasswordAsync(ForgotPasswordDto inputDto);
     }
 }

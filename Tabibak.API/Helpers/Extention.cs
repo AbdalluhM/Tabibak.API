@@ -8,10 +8,10 @@ namespace Tabibak.API.Helpers
         {
 
             return $"BEGIN:VEVENT\n" +
-               $"DoctorName:{appointment.Doctor.User.FullName}\n" +
+               $"DoctorName:{appointment.Doctor?.User?.FullName}\n" +
                $"DTSTART:{appointment.AppointmentDate:yyyyMMddTHHmmss}\n" +
-               $"LOCATION:{appointment.Doctor.Location.Name}\n" +
-               $"PatientName:{appointment.Patient.User.FullName}\n" +
+               $"LOCATION:{appointment.Doctor?.Location?.Name}\n" +
+               $"PatientName:{appointment.Patient?.User?.FullName}\n" +
                $"END:VEVENT";
         }
     }

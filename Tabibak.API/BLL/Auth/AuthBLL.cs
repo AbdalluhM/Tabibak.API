@@ -11,6 +11,7 @@ using Tabibak.Api.BLL.BaseReponse;
 using Tabibak.Api.BLL.Constants;
 using Tabibak.Api.Dtos.AuthDtos;
 using Tabibak.Api.Enums;
+using Tabibak.Api.Helpers.Email;
 using Tabibak.Api.Helpers.Settings;
 using Tabibak.API.Core.Models;
 using Tabibak.Context;
@@ -20,16 +21,24 @@ namespace Tabibak.Api.BLL.Auth
 {
     public class AuthBLL : BaseBLL, IAuthBLL
     {
+        private const string PasswordResetProvider = "Tabibak";
+        private const string PasswordResetTokenName = "PasswordResetCode";
+        private static readonly TimeSpan PasswordResetCodeLifetime = TimeSpan.FromMinutes(15);
+
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ApplicationDbcontext _context;
         private readonly IMapper _mapper;
+        private readonly IEmailSender _emailSender;
+        private readonly ILogger<AuthBLL> _logger;
         private readonly JWT _jwt;
-        public AuthBLL(UserManager<ApplicationUser> userManager, IMapper mapper, IOptions<JWT> jwt, ApplicationDbcontext context)
+        public AuthBLL(UserManager<ApplicationUser> userManager, IMapper mapper, IOptions<JWT> jwt, ApplicationDbcontext context, IEmailSender emailSender, ILogger<AuthBLL> logger)
         {
             _userManager = userManager;
             _mapper = mapper;
             _jwt = jwt.Value;
             _context = context;
+            _emailSender = emailSender;
+            _logger = logger;
         }
 
         public async Task<IResponse<LoginResultDto>> LoginAsync(LoginInputDto inputDto)
@@ -37,14 +46,19 @@ namespace Tabibak.Api.BLL.Auth
             var response = new Response<LoginResultDto>();
             try
             {
-                ApplicationUser user = new();
+                ApplicationUser? user;
                 if (inputDto.Email.Contains("@"))
                 {
-                    user = await _userManager.FindByEmailAsync(inputDto.Email);
+                    var email = _userManager.NormalizeEmail(inputDto.Email);
+                    user = await _userManager.Users
+                        .Include(u => u.RefreshTokens)
+                        .FirstOrDefaultAsync(u => u.NormalizedEmail == email);
                 }
                 else
                 {
-                    user = await _userManager.Users.FirstOrDefaultAsync(u => u.PhoneNumber == inputDto.Email);
+                    user = await _userManager.Users
+                        .Include(u => u.RefreshTokens)
+                        .FirstOrDefaultAsync(u => u.PhoneNumber == inputDto.Email);
                 }
 
 
@@ -67,6 +81,7 @@ namespace Tabibak.Api.BLL.Auth
                 string refreshToken = string.Empty;
                 DateTime refreshDateExpiration = default;
 
+                user.RefreshTokens ??= new List<RefreshToken>();
                 if (user.RefreshTokens.Any(t => t.IsActive))
                 {
                     var refreshTokenDb = user.RefreshTokens.FirstOrDefault(t => t.IsActive);
@@ -101,40 +116,47 @@ namespace Tabibak.Api.BLL.Auth
         public async Task<IResponse<LoginResultDto>> RefreshTokenAsync(string token)
         {
             var response = new Response<LoginResultDto>();
-            var user = await _userManager.Users.SingleOrDefaultAsync(u => u.RefreshTokens.Any(t => t.Token == token));
+            if (string.IsNullOrWhiteSpace(token))
+                return response.CreateResponse(MessageCodes.InvalidToken);
+
+            var user = await _userManager.Users
+                .Include(u => u.RefreshTokens)
+                .SingleOrDefaultAsync(u => u.RefreshTokens.Any(t => t.Token == token));
             if (user == null)
                 return response.CreateResponse(MessageCodes.InvalidToken);
 
-            var refreshToken = user.RefreshTokens?.Single(t => t.Token == token);
-
-            if (refreshToken != null && !refreshToken.IsActive)
+            user.RefreshTokens ??= new List<RefreshToken>();
+            var refreshToken = user.RefreshTokens.SingleOrDefault(t => t.Token == token);
+            if (refreshToken == null || !refreshToken.IsActive)
                 return response.CreateResponse(MessageCodes.InvalidToken);
 
             refreshToken.RevokedOn = DateTime.UtcNow;
 
             var newRefreshToken = CreateRefreshToken();
+            user.RefreshTokens.Add(newRefreshToken);
+
             int patienOrDoctorId = 0;
             if (user.Role == nameof(RoleEnum.Doctor))
             {
-                var doctor = await _context.Doctors.FindAsync(user.Id);
+                var doctor = await _context.Doctors.FirstOrDefaultAsync(d => d.UserId == user.Id);
                 patienOrDoctorId = doctor?.DoctorId ?? 0;
             }
             else
             {
-                var patient = await _context.Patients.FindAsync(user.Id);
+                var patient = await _context.Patients.FirstOrDefaultAsync(p => p.UserId == user.Id);
                 patienOrDoctorId = patient?.PatientId ?? 0;
             }
-            var jwtToken = await CreateJwtToken(user, patienOrDoctorId);
 
-            user.RefreshTokens.Add(newRefreshToken);
+            var jwtToken = await CreateJwtToken(user, patienOrDoctorId);
+            var roles = await _userManager.GetRolesAsync(user);
             await _userManager.UpdateAsync(user);
 
             return response.CreateResponse(new LoginResultDto
             {
                 Token = new JwtSecurityTokenHandler().WriteToken(jwtToken),
                 RefreshToken = newRefreshToken.Token,
-                RefreshDateExpiration = newRefreshToken.ExpiresOn
-
+                RefreshDateExpiration = newRefreshToken.ExpiresOn,
+                Role = roles.FirstOrDefault() ?? user.Role ?? string.Empty,
             });
         }
         public async Task<IResponse<bool>> RegisterAsync(UserInputDto inputDto)
@@ -230,6 +252,126 @@ namespace Tabibak.Api.BLL.Auth
             await _userManager.UpdateAsync(user);
 
             return response.CreateResponse(true);
+        }
+
+        public async Task<IResponse<ProfileDto>> GetProfileAsync(string userId)
+        {
+            var response = new Response<ProfileDto>();
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+                return response.CreateResponse(MessageCodes.NotFound, nameof(ApplicationUser));
+
+            return response.CreateResponse(ToProfileDto(user));
+        }
+
+        public async Task<IResponse<ProfileDto>> UpdateProfileAsync(string userId, UpdateProfileDto inputDto)
+        {
+            var response = new Response<ProfileDto>();
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+                return response.CreateResponse(MessageCodes.NotFound, nameof(ApplicationUser));
+
+            var email = inputDto.Email.Trim();
+            var phoneNumber = inputDto.PhoneNumber.Trim();
+
+            var emailOwner = await _userManager.FindByEmailAsync(email);
+            if (emailOwner != null && emailOwner.Id != user.Id)
+                return response.CreateResponse(MessageCodes.EmailAlreadyExists);
+
+            var phoneTaken = await _userManager.Users.AnyAsync(u => u.PhoneNumber == phoneNumber && u.Id != user.Id);
+            if (phoneTaken)
+                return response.CreateResponse(MessageCodes.AlreadyExists, nameof(ApplicationUser.PhoneNumber));
+
+            user.FullName = inputDto.FullName.Trim();
+            user.PhoneNumber = phoneNumber;
+            user.Email = email;
+            user.NormalizedEmail = _userManager.NormalizeEmail(email);
+
+            var result = await _userManager.UpdateAsync(user);
+            if (!result.Succeeded)
+                return IdentityErrorResponse(response, result);
+
+            return response.CreateResponse(ToProfileDto(user));
+        }
+
+        public async Task<IResponse<bool>> ChangePasswordAsync(string userId, ChangePasswordDto inputDto)
+        {
+            var response = new Response<bool>();
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+                return response.CreateResponse(MessageCodes.NotFound, nameof(ApplicationUser));
+
+            if (inputDto.CurrentPassword == inputDto.NewPassword)
+                return response.CreateResponse(MessageCodes.NewPasswordAlreadyDefined);
+
+            var result = await _userManager.ChangePasswordAsync(user, inputDto.CurrentPassword, inputDto.NewPassword);
+            if (!result.Succeeded)
+            {
+                if (result.Errors.Any(e => e.Code == "PasswordMismatch"))
+                    return response.CreateResponse(MessageCodes.InvalidPassword);
+
+                return IdentityErrorResponse(response, result);
+            }
+
+            return response.CreateResponse(true);
+        }
+
+        public async Task<IResponse<bool>> ForgotPasswordAsync(ForgotPasswordDto inputDto)
+        {
+            var response = new Response<bool>();
+            var user = await _userManager.FindByEmailAsync(inputDto.Email.Trim());
+            if (user == null)
+                return response.CreateResponse(MessageCodes.NotFound, nameof(ApplicationUser.Email));
+
+            var code = RandomNumberGenerator.GetInt32(0, 1_000_000).ToString("D6");
+            var expiresOn = DateTime.UtcNow.Add(PasswordResetCodeLifetime);
+            var payload = $"{HashResetCode(code)}|{expiresOn:O}";
+            await _userManager.SetAuthenticationTokenAsync(user, PasswordResetProvider, PasswordResetTokenName, payload);
+
+            try
+            {
+                await _emailSender.SendAsync(
+                    user.Email!,
+                    "Tabibak password reset code",
+                    $"Your verification code is {code}. It expires in 15 minutes.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send password reset code to {Email}", user.Email);
+                return response.CreateResponse(MessageCodes.EmailSendFailed);
+            }
+
+            return response.CreateResponse(true);
+        }
+
+        private static string HashResetCode(string code)
+        {
+            var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(code));
+            return Convert.ToBase64String(bytes);
+        }
+
+        private static ProfileDto ToProfileDto(ApplicationUser user)
+        {
+            return new ProfileDto
+            {
+                FullName = user.FullName,
+                PhoneNumber = user.PhoneNumber ?? string.Empty,
+                Email = user.Email ?? string.Empty
+            };
+        }
+
+        private static IResponse<T> IdentityErrorResponse<T>(Response<T> response, IdentityResult result)
+        {
+            foreach (var error in result.Errors)
+            {
+                response.AppendError(new TErrorField
+                {
+                    Code = error.Code,
+                    Message = error.Description
+                });
+            }
+
+            return response.CreateResponse();
         }
 
         public async Task AssignRoleToUser(RoleEnum? role, ApplicationUser user)

@@ -463,6 +463,9 @@ namespace Tabibak.Api.BLL.Constants
         InvalidLink = 9011,
         [Description("Failed :Please activate plugin.")]
         IsActivePlugin = 9012,
+
+        [Description("Failed :Could not send verification email")]
+        EmailSendFailed = 9013,
     }
 
     #endregion BLL Responses MessageCodes

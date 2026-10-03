@@ -345,38 +345,26 @@ namespace Tabibak.API.BLL.Appointments
         public async Task<IResponse<string>> GenerateAppointmentQrCode(int id)
         {
             var response = new Response<string>();
-            try
-            {
-                var appointment = _context.Appointments.Include(a => a.Patient)
-                    .ThenInclude(p => p.User)
-                    .Include(a => a.Doctor)
-                    .ThenInclude(d => d.User)
-                    .Include(d => d.Doctor)
-                    .ThenInclude(d => d.Location)
-                    .FirstOrDefault(a => a.AppointmentId == id);
 
-                if (appointment == null)
-                    return response.CreateResponse(MessageCodes.NotFound, nameof(Appointment));
+            var appointment = await _context.Appointments.Include(a => a.Patient)
+                .ThenInclude(p => p.User)
+                .Include(a => a.Doctor)
+                .ThenInclude(d => d.User)
+                .Include(a => a.Doctor)
+                .ThenInclude(d => d.Location)
+                .FirstOrDefaultAsync(a => a.AppointmentId == id);
 
-                // Generate QR code content from appointment
-                string qrContent = appointment.ToQRCodeContent();
+            if (appointment == null)
+                return response.CreateResponse(MessageCodes.NotFound, nameof(Appointment));
 
-                // Create QR Code
+            string qrContent = appointment.ToQRCodeContent();
 
-                QRCodeGenerator qrGenerator = new QRCodeGenerator();
-                QRCodeData qrCodeData = qrGenerator.CreateQrCode(qrContent, QRCodeGenerator.ECCLevel.Q);
+            using var qrGenerator = new QRCodeGenerator();
+            using var qrCodeData = qrGenerator.CreateQrCode(qrContent, QRCodeGenerator.ECCLevel.Q);
+            using var qrCode = new PngByteQRCode(qrCodeData);
+            byte[] qrCodeBytes = qrCode.GetGraphic(10);
 
-                // Use BitmapByteQRCode instead of QRCode class
-                BitmapByteQRCode qrCode = new BitmapByteQRCode(qrCodeData);
-                byte[] qrCodeBytes = qrCode.GetGraphic(20); // 20 pixels per module
-
-                return response.CreateResponse(Convert.ToBase64String(qrCodeBytes));
-            }
-            catch (Exception e)
-            {
-
-                throw;
-            }
+            return response.CreateResponse(Convert.ToBase64String(qrCodeBytes));
         }
 
     }

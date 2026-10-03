@@ -86,6 +86,7 @@ builder.Services.AddDbContext<ApplicationDbcontext>(option =>
 
 
 builder.Services.Configure<FileStorageSettings>(builder.Configuration.GetSection(AppSettingEnum.FileStorageSettings.ToString()));
+builder.Services.Configure<MailSettings>(builder.Configuration.GetSection(AppSettingEnum.MailSettings.ToString()));
 
 // Configure JWT authentication
 var jwtSection = builder.Configuration.GetSection(AppSettingEnum.JWT.ToString());

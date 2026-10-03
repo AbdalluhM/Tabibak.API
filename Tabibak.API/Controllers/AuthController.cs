@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Tabibak.Api.BLL.Auth;
 using Tabibak.Api.Dtos.AuthDtos;
 
@@ -30,6 +32,13 @@ namespace EcommerceApi.Controllers
 
             return Ok(result);
         }
+        [HttpPost("ForgotPassword")]
+        public async Task<IActionResult> ForgotPassword(ForgotPasswordDto inputDto)
+        {
+            var result = await _authBLL.ForgotPasswordAsync(inputDto);
+            return Ok(result);
+        }
+
         [HttpPost("RefreshToken")]
         public async Task<IActionResult> RefreshToken(RefreshTokenDto refreshToken)
         {
@@ -37,6 +46,47 @@ namespace EcommerceApi.Controllers
             var result = await _authBLL.RefreshTokenAsync(refreshToken.RefreshToken);
 
             return Ok(result);
+        }
+
+        [Authorize]
+        [HttpGet("Profile")]
+        public async Task<IActionResult> GetProfile()
+        {
+            var userId = CurrentUserId();
+            if (userId == null)
+                return Unauthorized();
+
+            var result = await _authBLL.GetProfileAsync(userId);
+            return Ok(result);
+        }
+
+        [Authorize]
+        [HttpPut("Profile")]
+        public async Task<IActionResult> UpdateProfile(UpdateProfileDto inputDto)
+        {
+            var userId = CurrentUserId();
+            if (userId == null)
+                return Unauthorized();
+
+            var result = await _authBLL.UpdateProfileAsync(userId, inputDto);
+            return Ok(result);
+        }
+
+        [Authorize]
+        [HttpPost("ChangePassword")]
+        public async Task<IActionResult> ChangePassword(ChangePasswordDto inputDto)
+        {
+            var userId = CurrentUserId();
+            if (userId == null)
+                return Unauthorized();
+
+            var result = await _authBLL.ChangePasswordAsync(userId, inputDto);
+            return Ok(result);
+        }
+
+        private string? CurrentUserId()
+        {
+            return User.FindFirstValue("uid");
         }
 
     }
