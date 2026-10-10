@@ -24,6 +24,8 @@ namespace Tabibak.API.Controllers
         public async Task<IActionResult> Create([FromBody] CreateAppointmentDto dto)
         {
             var appointment = await _appointmentBLL.CreateAppointmentAsync(dto);
+            if (!appointment.IsSuccess)
+                return BadRequest(appointment);
             return CreatedAtAction(nameof(GetById), new { id = appointment.Data.AppointmentId }, appointment);
         }
 
@@ -64,8 +66,8 @@ namespace Tabibak.API.Controllers
         public async Task<IActionResult> GetById(int id)
         {
             var appointment = await _appointmentBLL.GetAppointmentByIdAsync(id);
-            if (appointment == null)
-                return NotFound();
+            if (!appointment.IsSuccess)
+                return NotFound(appointment);
             return Ok(appointment);
         }
 
@@ -115,7 +117,7 @@ namespace Tabibak.API.Controllers
         [Authorize(Roles = nameof(RoleEnum.Doctor))]
         public async Task<IActionResult> StartAppointment(int appointmentId)
         {
-            var result = await _appointmentBLL.StartAppointmentAsync(appointmentId);
+            var result = await _appointmentBLL.StartAppointmentAsync(appointmentId, UserId);
 
             if (!result.IsSuccess)
             {

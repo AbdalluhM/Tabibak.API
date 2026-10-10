@@ -30,9 +30,11 @@ namespace Tabibak.API.BLL.Appointments
                 return response.CreateResponse(MessageCodes.NotFound, nameof(doctor));
             }
 
-            // ✅ Ensure no duplicate slots
+            // Active slots only — cancelled/completed must not block a new slot
             bool slotExists = await _context.Appointments
-                .AnyAsync(a => a.DoctorId == dto.DoctorId && a.AppointmentDate == dto.AppointmentDate);
+                .AnyAsync(a => a.DoctorId == dto.DoctorId
+                    && a.AppointmentDate == dto.AppointmentDate
+                    && (a.Status == AppointmentStatus.Available || a.Status == AppointmentStatus.Booked));
 
             if (slotExists)
             {
@@ -53,7 +55,7 @@ namespace Tabibak.API.BLL.Appointments
             {
                 AppointmentId = appointment.AppointmentId,
                 DoctorId = doctor.DoctorId,
-                DoctorName = doctor.Name,
+                DoctorName = doctor.User?.FullName,
                 AppointmentDate = appointment.AppointmentDate,
                 Status = appointment.Status
             });
@@ -91,29 +93,30 @@ namespace Tabibak.API.BLL.Appointments
         {
 
             var response = new Response<AppointmentResponseDto>();
-            var doctor = await _context.Doctors.FindAsync(dto.DoctorId);
-            var patient = await _context.Patients.FindAsync(dto.PatientId);
+            var doctor = await _context.Doctors.Include(d => d.User).FirstOrDefaultAsync(d => d.DoctorId == dto.DoctorId);
+            var patient = await _context.Patients.Include(p => p.User).FirstOrDefaultAsync(p => p.PatientId == dto.PatientId);
 
             if (doctor == null || patient == null)
             {
                 return response.CreateResponse(MessageCodes.NotFound, $"{nameof(doctor)}or{nameof(patient)}");
             }
 
-            // ✅ Check if doctor is available at the requested time
             bool isDoctorBusy = await _context.Appointments
-                .AnyAsync(a => a.DoctorId == dto.DoctorId && a.AppointmentDate == dto.AppointmentDate);
+                .AnyAsync(a => a.DoctorId == dto.DoctorId
+                    && a.AppointmentDate == dto.AppointmentDate
+                    && (a.Status == AppointmentStatus.Available || a.Status == AppointmentStatus.Booked));
 
             if (isDoctorBusy)
             {
                 return response.CreateResponse(MessageCodes.AlreadyExists, nameof(Appointment));
             }
 
-            // ✅ Create a new appointment
             var appointment = new Appointment
             {
                 DoctorId = dto.DoctorId,
                 PatientId = dto.PatientId,
-                AppointmentDate = dto.AppointmentDate
+                AppointmentDate = dto.AppointmentDate,
+                Status = AppointmentStatus.Booked
             };
 
             _context.Appointments.Add(appointment);
@@ -123,10 +126,11 @@ namespace Tabibak.API.BLL.Appointments
             {
                 AppointmentId = appointment.AppointmentId,
                 DoctorId = appointment.DoctorId,
-                DoctorName = doctor.Name,
+                DoctorName = doctor.User?.FullName,
                 PatientId = appointment.PatientId,
-                PatientName = patient.User.FullName,
-                AppointmentDate = appointment.AppointmentDate
+                PatientName = patient.User?.FullName,
+                AppointmentDate = appointment.AppointmentDate,
+                Status = appointment.Status
             });
         }
 
@@ -143,7 +147,7 @@ namespace Tabibak.API.BLL.Appointments
                 {
                     AppointmentId = a.AppointmentId,
                     DoctorId = a.DoctorId,
-                    DoctorName = a.Doctor.Name,
+                    DoctorName = a.Doctor.User.FullName,
                     AppointmentDate = a.AppointmentDate,
                     Status = a.Status
                 })
@@ -164,10 +168,11 @@ namespace Tabibak.API.BLL.Appointments
                 {
                     AppointmentId = a.AppointmentId,
                     DoctorId = a.DoctorId,
-                    DoctorName = a.Doctor.Name,
+                    DoctorName = a.Doctor.User.FullName,
                     PatientId = a.PatientId,
-                    PatientName = a.Patient.User.FullName,
-                    AppointmentDate = a.AppointmentDate
+                    PatientName = a.Patient != null ? a.Patient.User.FullName : null,
+                    AppointmentDate = a.AppointmentDate,
+                    Status = a.Status
                 })
                 .ToListAsync());
         }
@@ -191,10 +196,11 @@ namespace Tabibak.API.BLL.Appointments
             {
                 AppointmentId = appointment.AppointmentId,
                 DoctorId = appointment.DoctorId,
-                DoctorName = appointment.Doctor.Name,
+                DoctorName = appointment.Doctor?.User?.FullName,
                 PatientId = appointment.PatientId,
-                PatientName = appointment.Patient.User.FullName,
-                AppointmentDate = appointment.AppointmentDate
+                PatientName = appointment.Patient?.User?.FullName,
+                AppointmentDate = appointment.AppointmentDate,
+                Status = appointment.Status
             });
         }
 
@@ -240,8 +246,9 @@ namespace Tabibak.API.BLL.Appointments
                     DoctorId = a.DoctorId,
                     DoctorName = a.Doctor.User.FullName,
                     PatientId = a.PatientId,
-                    PatientName = a.Patient.User.FullName,
-                    AppointmentDate = a.AppointmentDate
+                    PatientName = a.Patient != null ? a.Patient.User.FullName : null,
+                    AppointmentDate = a.AppointmentDate,
+                    Status = a.Status
                 })
                 .ToListAsync());
         }
@@ -260,10 +267,11 @@ namespace Tabibak.API.BLL.Appointments
                 {
                     AppointmentId = a.AppointmentId,
                     DoctorId = a.DoctorId,
-                    DoctorName = a.Doctor.Name,
+                    DoctorName = a.Doctor.User.FullName,
                     PatientId = a.PatientId,
-                    PatientName = a.Patient.User.FullName,
-                    AppointmentDate = a.AppointmentDate
+                    PatientName = a.Patient != null ? a.Patient.User.FullName : null,
+                    AppointmentDate = a.AppointmentDate,
+                    Status = a.Status
                 })
                 .ToListAsync());
         }
@@ -285,34 +293,35 @@ namespace Tabibak.API.BLL.Appointments
                 return response.CreateResponse(MessageCodes.InvalidOperation);
             }
 
-            // ✅ Cancel appointment
-            appointment.Status = AppointmentStatus.Cancelled;
+            // Free the slot so another patient can book it
+            appointment.PatientId = null;
+            appointment.StartTime = null;
+            appointment.EndTime = null;
+            appointment.Status = AppointmentStatus.Available;
             await _context.SaveChangesAsync();
 
             return response.CreateResponse(true);
         }
 
 
-        public async Task<IResponse<bool>> StartAppointmentAsync(int appointmentId)
+        public async Task<IResponse<bool>> StartAppointmentAsync(int appointmentId, int doctorId)
         {
             var response = new Response<bool>();
 
             var appointment = await _context.Appointments
-                .FirstOrDefaultAsync(a => a.AppointmentId == appointmentId);
+                .FirstOrDefaultAsync(a => a.AppointmentId == appointmentId && a.DoctorId == doctorId);
 
             if (appointment == null)
             {
-                return response.CreateResponse(MessageCodes.NotFound, "Appointment not found");
+                return response.CreateResponse(MessageCodes.NotFound, nameof(Appointment));
             }
 
-            if (appointment.Status != AppointmentStatus.Available)
+            if (appointment.Status != AppointmentStatus.Booked || appointment.PatientId == null)
             {
                 return response.CreateResponse(MessageCodes.InvalidOperation);
             }
 
-            // ✅ Start the appointment
             appointment.StartTime = TimeOnly.FromDateTime(DateTime.Now);
-            appointment.Status = AppointmentStatus.Booked;
 
             await _context.SaveChangesAsync();
             return response.CreateResponse(true);
