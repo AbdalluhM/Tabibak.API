@@ -39,6 +39,20 @@ namespace EcommerceApi.Controllers
             return Ok(result);
         }
 
+        [HttpPost("VerifyResetCode")]
+        public async Task<IActionResult> VerifyResetCode(VerifyResetCodeDto inputDto)
+        {
+            var result = await _authBLL.VerifyResetCodeAsync(inputDto);
+            return Ok(result);
+        }
+
+        [HttpPost("ResetPassword")]
+        public async Task<IActionResult> ResetPassword(ResetPasswordDto inputDto)
+        {
+            var result = await _authBLL.ResetPasswordAsync(inputDto);
+            return Ok(result);
+        }
+
         [HttpPost("RefreshToken")]
         public async Task<IActionResult> RefreshToken(RefreshTokenDto refreshToken)
         {

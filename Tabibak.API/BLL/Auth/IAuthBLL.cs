@@ -13,5 +13,7 @@ namespace Tabibak.Api.BLL.Auth
         Task<IResponse<ProfileDto>> UpdateProfileAsync(string userId, UpdateProfileDto inputDto);
         Task<IResponse<bool>> ChangePasswordAsync(string userId, ChangePasswordDto inputDto);
         Task<IResponse<bool>> ForgotPasswordAsync(ForgotPasswordDto inputDto);
+        Task<IResponse<bool>> VerifyResetCodeAsync(VerifyResetCodeDto inputDto);
+        Task<IResponse<bool>> ResetPasswordAsync(ResetPasswordDto inputDto);
     }
 }

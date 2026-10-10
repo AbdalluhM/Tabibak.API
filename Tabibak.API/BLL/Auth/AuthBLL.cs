@@ -344,6 +344,70 @@ namespace Tabibak.Api.BLL.Auth
             return response.CreateResponse(true);
         }
 
+        public async Task<IResponse<bool>> VerifyResetCodeAsync(VerifyResetCodeDto inputDto)
+        {
+            var response = new Response<bool>();
+            var validation = await ValidateResetCodeAsync(inputDto.Email, inputDto.Code);
+            if (!validation.IsSuccess)
+                return response.CreateResponse(validation.ErrorCode!.Value, validation.ErrorMessage ?? string.Empty);
+
+            return response.CreateResponse(true);
+        }
+
+        public async Task<IResponse<bool>> ResetPasswordAsync(ResetPasswordDto inputDto)
+        {
+            var response = new Response<bool>();
+            var validation = await ValidateResetCodeAsync(inputDto.Email, inputDto.Code);
+            if (!validation.IsSuccess)
+                return response.CreateResponse(validation.ErrorCode!.Value, validation.ErrorMessage ?? string.Empty);
+
+            var user = validation.User!;
+            var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var result = await _userManager.ResetPasswordAsync(user, resetToken, inputDto.NewPassword);
+            if (!result.Succeeded)
+                return IdentityErrorResponse(response, result);
+
+            await _userManager.RemoveAuthenticationTokenAsync(user, PasswordResetProvider, PasswordResetTokenName);
+
+            if (user.RefreshTokens != null)
+            {
+                foreach (var refreshToken in user.RefreshTokens.Where(t => t.IsActive))
+                    refreshToken.RevokedOn = DateTime.UtcNow;
+                await _userManager.UpdateAsync(user);
+            }
+
+            return response.CreateResponse(true);
+        }
+
+        private async Task<(bool IsSuccess, ApplicationUser? User, MessageCodes? ErrorCode, string? ErrorMessage)> ValidateResetCodeAsync(string email, string code)
+        {
+            var user = await _userManager.Users
+                .Include(u => u.RefreshTokens)
+                .FirstOrDefaultAsync(u => u.NormalizedEmail == _userManager.NormalizeEmail(email.Trim()));
+
+            if (user == null)
+                return (false, null, MessageCodes.NotFound, nameof(ApplicationUser.Email));
+
+            var payload = await _userManager.GetAuthenticationTokenAsync(user, PasswordResetProvider, PasswordResetTokenName);
+            if (string.IsNullOrWhiteSpace(payload))
+                return (false, null, MessageCodes.InvalidVerificationLink, string.Empty);
+
+            var parts = payload.Split('|', 2);
+            if (parts.Length != 2 || !DateTime.TryParse(parts[1], null, System.Globalization.DateTimeStyles.RoundtripKind, out var expiresOn))
+                return (false, null, MessageCodes.InvalidVerificationLink, string.Empty);
+
+            if (DateTime.UtcNow > expiresOn)
+            {
+                await _userManager.RemoveAuthenticationTokenAsync(user, PasswordResetProvider, PasswordResetTokenName);
+                return (false, null, MessageCodes.PhoneCodeExpired, string.Empty);
+            }
+
+            if (!string.Equals(parts[0], HashResetCode(code.Trim()), StringComparison.Ordinal))
+                return (false, null, MessageCodes.InvalidVerificationLink, string.Empty);
+
+            return (true, user, null, null);
+        }
+
         private static string HashResetCode(string code)
         {
             var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(code));
