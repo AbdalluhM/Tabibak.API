@@ -76,7 +76,9 @@ builder.Services.AddSwaggerGen(swagger =>
 
 
 //Add Identity and DbContext
-builder.Services.AddIdentity<ApplicationUser, IdentityRole>().AddEntityFrameworkStores<ApplicationDbcontext>();
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
+    .AddEntityFrameworkStores<ApplicationDbcontext>()
+    .AddDefaultTokenProviders();
 var conn = builder.Configuration.GetConnectionString(Constants.ConnectionStringSettings);
 builder.Services.AddDbContext<ApplicationDbcontext>(option =>
      option.UseSqlServer(conn));

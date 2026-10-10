@@ -6,6 +6,7 @@ namespace Tabibak.Api.Dtos.AuthDtos
     public class UserInputDto
     {
         public RoleEnum? Role { get; set; }
+        [Required, StringLength(150)]
         public string FullName { get; set; } = null!;
         [Required, StringLength(100)]
         public string Email { get; set; }

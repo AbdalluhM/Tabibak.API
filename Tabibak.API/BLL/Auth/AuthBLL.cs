@@ -7,6 +7,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 using Tabibak.Api.BLL.BaseReponse;
 using Tabibak.Api.BLL.Constants;
 using Tabibak.Api.Dtos.AuthDtos;
@@ -168,15 +169,16 @@ namespace Tabibak.Api.BLL.Auth
                 if (await _userManager.FindByEmailAsync(inputDto.Email) is not null)
                     return response.CreateResponse(MessageCodes.AlreadyExists, inputDto.Email);
 
-                if (await _userManager.FindByNameAsync(inputDto.FullName) is not null)
-                    return response.CreateResponse(MessageCodes.AlreadyExists, inputDto.FullName);
+                var fullName = inputDto.FullName.Trim();
+                if (string.IsNullOrWhiteSpace(fullName))
+                    return response.CreateResponse(MessageCodes.Required, nameof(inputDto.FullName));
 
-                //   var user = _mapper.Map<ApplicationUser>(inputDto);
+                var userName = await GenerateUniqueUserNameAsync(fullName, inputDto.Email);
 
                 var user = new ApplicationUser
                 {
-                    FullName = inputDto.FullName,
-                    UserName = inputDto.FullName.Split(" ")[0],
+                    FullName = fullName,
+                    UserName = userName,
                     Email = inputDto.Email,
                     PhoneNumber = inputDto.PhoneNumber,
                     Role = inputDto.Role switch
@@ -362,19 +364,26 @@ namespace Tabibak.Api.BLL.Auth
                 return response.CreateResponse(validation.ErrorCode!.Value, validation.ErrorMessage ?? string.Empty);
 
             var user = validation.User!;
-            var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
-            var result = await _userManager.ResetPasswordAsync(user, resetToken, inputDto.NewPassword);
-            if (!result.Succeeded)
-                return IdentityErrorResponse(response, result);
+
+            // OTP already verified — set password directly (avoids Identity reset-token provider failures)
+            if (await _userManager.HasPasswordAsync(user))
+            {
+                var removeResult = await _userManager.RemovePasswordAsync(user);
+                if (!removeResult.Succeeded)
+                    return IdentityErrorResponse(response, removeResult);
+            }
+
+            var addResult = await _userManager.AddPasswordAsync(user, inputDto.NewPassword);
+            if (!addResult.Succeeded)
+                return IdentityErrorResponse(response, addResult);
 
             await _userManager.RemoveAuthenticationTokenAsync(user, PasswordResetProvider, PasswordResetTokenName);
 
-            if (user.RefreshTokens != null)
-            {
-                foreach (var refreshToken in user.RefreshTokens.Where(t => t.IsActive))
-                    refreshToken.RevokedOn = DateTime.UtcNow;
-                await _userManager.UpdateAsync(user);
-            }
+            user.RefreshTokens ??= new List<RefreshToken>();
+            foreach (var refreshToken in user.RefreshTokens.Where(t => t.IsActive))
+                refreshToken.RevokedOn = DateTime.UtcNow;
+
+            await _userManager.UpdateAsync(user);
 
             return response.CreateResponse(true);
         }
@@ -506,6 +515,38 @@ namespace Tabibak.Api.BLL.Auth
                 ExpiresOn = DateTime.UtcNow.AddDays(1),
                 CreatedOn = DateTime.UtcNow
             };
+        }
+
+        private async Task<string> GenerateUniqueUserNameAsync(string fullName, string email)
+        {
+            // Keep letters/digits only (spaces & symbols removed) so Identity accepts the username.
+            var baseName = Regex.Replace(fullName.Trim().ToLowerInvariant(), @"[^\p{L}\p{N}]", "");
+            if (string.IsNullOrWhiteSpace(baseName))
+            {
+                var emailLocal = email.Split('@')[0];
+                baseName = Regex.Replace(emailLocal.ToLowerInvariant(), @"[^a-z0-9]", "");
+            }
+
+            if (string.IsNullOrWhiteSpace(baseName))
+                baseName = "user";
+
+            // Identity default AllowedUserNameCharacters is ASCII-only; fall back when name is non-Latin.
+            if (!Regex.IsMatch(baseName, @"^[a-zA-Z0-9._@+-]+$"))
+            {
+                var emailLocal = email.Split('@')[0];
+                var asciiFromEmail = Regex.Replace(emailLocal.ToLowerInvariant(), @"[^a-z0-9]", "");
+                baseName = string.IsNullOrWhiteSpace(asciiFromEmail) ? "user" : asciiFromEmail;
+            }
+
+            var userName = baseName;
+            var suffix = 0;
+            while (await _userManager.FindByNameAsync(userName) is not null)
+            {
+                suffix++;
+                userName = $"{baseName}{suffix}";
+            }
+
+            return userName;
         }
         #endregion
     }
